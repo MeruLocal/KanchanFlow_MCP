@@ -1,0 +1,56 @@
+{
+  "syncedAt": "2026-09-03T10:30:08.220Z",
+  "sourceCommit": "a30153e",
+  "documents": [
+    {
+      "path": "site/spec-contract.md",
+      "source": "SPEC-CONTRACT.md",
+      "summary": "The website build contract — the locked guardrails every page obeys."
+    },
+    {
+      "path": "site/website-readme.md",
+      "source": "README.md",
+      "summary": "The website repository README: route inventory, content architecture, design system."
+    },
+    {
+      "path": "site/seo/01-strategy.md",
+      "source": "docs/seo/01-strategy.md",
+      "summary": "SEO strategy for the KanchanFlow site."
+    },
+    {
+      "path": "site/seo/02-keywords.md",
+      "source": "docs/seo/02-keywords.md",
+      "summary": "Keyword architecture and target terms."
+    },
+    {
+      "path": "site/seo/03-architecture.md",
+      "source": "docs/seo/03-architecture.md",
+      "summary": "Site and URL architecture."
+    },
+    {
+      "path": "site/seo/04-editorial.md",
+      "source": "docs/seo/04-editorial.md",
+      "summary": "Editorial standards and house style."
+    },
+    {
+      "path": "site/seo/05-technical.md",
+      "source": "docs/seo/05-technical.md",
+      "summary": "Technical SEO requirements."
+    },
+    {
+      "path": "site/seo/06-roadmap.md",
+      "source": "docs/seo/06-roadmap.md",
+      "summary": "SEO delivery roadmap."
+    },
+    {
+      "path": "site/seo/07-page-briefs.md",
+      "source": "docs/seo/07-page-briefs.md",
+      "summary": "Per-page content briefs."
+    },
+    {
+      "path": "site/seo/08-conflicts.md",
+      "source": "docs/seo/08-conflicts.md",
+      "summary": "Known content conflicts and their resolutions."
+    }
+  ]
+}

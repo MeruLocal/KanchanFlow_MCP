@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.log
+
+# Local configuration. .env.example is the committed template.
+.env
+.env.*
+!.env.example
+
+# Vitest writes a timestamped config shim next to vitest.config.ts on each run.
+vitest.config.ts.timestamp-*.mjs
+
+.DS_Store
