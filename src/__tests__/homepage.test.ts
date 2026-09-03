@@ -74,7 +74,8 @@ describe("escaping", () => {
     for (const [open, close] of [
       ["<article", "</article>"],
       ["<section", "</section>"],
-      ["<li", "</li>"],
+      // "<li" alone also matches "<link", so require a delimiter after it.
+      ["<li[ >]", "</li>"],
       ["<ul", "</ul>"],
     ] as const) {
       const opened = html.match(new RegExp(open, "g")) ?? [];

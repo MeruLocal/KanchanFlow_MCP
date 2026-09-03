@@ -306,6 +306,44 @@ fs.writeFileSync(
   `${JSON.stringify({ syncedAt: mirror.meta.syncedAt, sourceCommit: mirror.meta.sourceCommit, documents: manifest }, null, 2)}\n`
 );
 
+/* ------------------------------------------------------------------ */
+/* Mirror the brand artwork into assets/brand/                         */
+/* ------------------------------------------------------------------ */
+
+/*
+ * The homepage the HTTP transport serves needs the real logo, and the browser
+ * tab needs a real icon. Both are copied from the website repository rather
+ * than redrawn here, for the same reason the content is: two copies of a logo
+ * drift, and the one nobody looks at is the one that goes stale.
+ *
+ * Only these three files. The MCP server has no use for the rest of the brand
+ * kit, and an assets folder that accumulates is an assets folder that ships
+ * megabytes nobody serves.
+ */
+const BRAND_ASSETS = [
+  ["public/brand/kanchanflow-logo-light.png", "kanchanflow-logo-light.png", "Full lockup for a light background."],
+  ["public/brand/kanchanflow-logo-dark.png", "kanchanflow-logo-dark.png", "Full lockup for a dark background."],
+  ["public/brand/icon-192.png", "icon-192.png", "Browser tab and bookmark icon."],
+];
+
+const brandDir = path.join(ROOT, "assets", "brand");
+fs.mkdirSync(brandDir, { recursive: true });
+
+let brandCopied = 0;
+const brandManifest = [];
+for (const [from, to, summary] of BRAND_ASSETS) {
+  const src = path.join(REPO, from);
+  if (!fs.existsSync(src)) continue;
+  fs.copyFileSync(src, path.join(brandDir, to));
+  brandManifest.push({ file: to, source: from, summary, bytes: fs.statSync(src).size });
+  brandCopied += 1;
+}
+
+fs.writeFileSync(
+  path.join(brandDir, "MANIFEST.json"),
+  `${JSON.stringify({ syncedAt: mirror.meta.syncedAt, sourceCommit: mirror.meta.sourceCommit, assets: brandManifest }, null, 2)}\n`
+);
+
 fs.rmSync(tmp, { recursive: true, force: true });
 
 const bytes = fs.statSync(path.join(ROOT, "data", "site-mirror.json")).size;
@@ -322,5 +360,6 @@ console.log(
     `  releases                ${mirror.changelog.releases.length}`,
     `  routes                  ${mirror.site.routeCount}`,
     `  reference/site docs     ${copied}`,
+    `  assets/brand files      ${brandCopied}`,
   ].join("\n")
 );

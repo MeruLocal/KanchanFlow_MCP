@@ -36,6 +36,12 @@ import {
   SERVER_TITLE,
   SERVER_VERSION,
 } from "./server-info.js";
+import {
+  ICON_URL,
+  LOGO_DARK_URL,
+  LOGO_LIGHT_URL,
+  brandAssetsAvailable,
+} from "./assets.js";
 
 /* ---------------------------------------------------------------- escaping */
 
@@ -216,10 +222,24 @@ a{color:var(--accent)}
 
 header.top{border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:20}
 .topin{display:flex;align-items:center;gap:14px;height:60px}
-.logo{width:28px;height:28px;border-radius:7px;background:var(--accent);color:var(--on-accent);
+/* The real lockup, served from /assets/brand/. Two files, swapped on the
+   colour scheme rather than tinted: the artwork carries deep maroons that go
+   muddy on a dark ground, and the dark file lifts them. Both are in the DOM
+   and only one is ever painted, so the correct one is right at first paint
+   with no script. */
+.logo{height:26px;width:auto;display:block;flex:none}
+.logo.dark{display:none}
+@media (prefers-color-scheme: dark){
+  .logo.light{display:none}
+  .logo.dark{display:block}
+}
+/* Fallback tile, used only when the brand artwork has not been synced. */
+.logomark{width:28px;height:28px;border-radius:7px;background:var(--accent);color:var(--on-accent);
   display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
 .brand{font-weight:650;letter-spacing:-.01em}
 .brand span{color:var(--muted);font-weight:450}
+.brand.withlogo{font-weight:450;color:var(--muted);letter-spacing:0}
+.brandlink{display:inline-flex;align-items:center;text-decoration:none;flex:none}
 .pill{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;
   color:var(--ok);background:var(--ok-soft);border:1px solid var(--border);padding:4px 11px;border-radius:999px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
@@ -488,6 +508,22 @@ export function renderHomepage(config: Config): string {
   const rateLimitLabel =
     config.rateLimitPerMinute === 0 ? "off" : `${esc(config.rateLimitPerMinute)}/min`;
 
+  /*
+   * The masthead. With the artwork synced this is the real lockup, which
+   * already reads "Kanchan Flow", so the text beside it is only the "MCP"
+   * qualifier. Without it — a checkout where `npm run sync` has not run — it
+   * falls back to the typographic tile and the full name, so the header is
+   * never empty and the page never links a broken image.
+   */
+  const brandHeader = brandAssetsAvailable()
+    ? `<a class="brandlink" href="/" aria-label="${esc(SERVER_TITLE)} MCP server">` +
+      `<img class="logo light" src="${LOGO_LIGHT_URL}" alt="${esc(SERVER_TITLE)}" width="1200" height="261" decoding="async">` +
+      `<img class="logo dark" src="${LOGO_DARK_URL}" alt="" aria-hidden="true" width="1200" height="261" decoding="async">` +
+      `</a>` +
+      `<div class="brand withlogo">MCP server</div>`
+    : `<div class="logomark">K</div>` +
+      `<div class="brand">${esc(SERVER_TITLE)} <span>MCP</span></div>`;
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -496,14 +532,15 @@ export function renderHomepage(config: Config): string {
 <title>${esc(SERVER_TITLE)} MCP Server</title>
 <meta name="description" content="${esc(SERVER_DESCRIPTION.slice(0, 180))}">
 <meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="${ICON_URL}">
+<link rel="apple-touch-icon" href="${ICON_URL}">
 <style>${STYLES}</style>
 </head>
 <body>
 
 <header class="top">
   <div class="wrap topin">
-    <div class="logo">K</div>
-    <div class="brand">${esc(SERVER_TITLE)} <span>MCP</span></div>
+    ${brandHeader}
     <div class="pill"><span class="dot"></span> running &middot; v${esc(SERVER_VERSION)}</div>
   </div>
 </header>

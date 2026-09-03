@@ -32,6 +32,7 @@ import {
   siteResources,
 } from "./resources/index.js";
 import { homepage } from "./homepage.js";
+import { assetFor, ICON_URL } from "./assets.js";
 import { logger } from "./utils/logger.js";
 import { RateLimiter } from "./utils/rate-limiter.js";
 import {
@@ -241,6 +242,38 @@ async function runHttp(config: Config): Promise<void> {
           ...(note ? { note } : {}),
         });
       };
+
+      // Brand artwork for the homepage and the browser tab. Public and
+      // read-only, like the page that references it. This is an allowlist of
+      // three filenames, not a static file server — see src/assets.ts.
+      // /favicon.ico is aliased onto the icon so a browser that asks for it by
+      // convention gets one instead of a 404 in the log.
+      const assetPath = url.pathname === "/favicon.ico" ? ICON_URL : url.pathname;
+      const asset = assetFor(assetPath);
+      if (asset) {
+        if (req.method !== "GET" && req.method !== "HEAD") {
+          res.writeHead(405, { allow: "GET, HEAD" });
+          res.end();
+          finish(405);
+          return;
+        }
+        if (req.headers["if-none-match"] === asset.etag) {
+          res.writeHead(304, { etag: asset.etag });
+          res.end();
+          finish(304);
+          return;
+        }
+        res.writeHead(200, {
+          "content-type": asset.contentType,
+          "content-length": asset.bytes.length,
+          "cache-control": "public, max-age=86400",
+          "x-content-type-options": "nosniff",
+          etag: asset.etag,
+        });
+        res.end(req.method === "HEAD" ? undefined : asset.bytes);
+        finish(200);
+        return;
+      }
 
       // The homepage. Reachable without a token: it is generated from the
       // same registries the protocol advertises and contains nothing a client

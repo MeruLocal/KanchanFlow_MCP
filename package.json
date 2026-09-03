@@ -1,7 +1,7 @@
 {
   "name": "kanchanflow-mcp",
   "version": "1.0.0",
-  "description": "Model Context Protocol server for KanchanFlow — the RFQ-to-Order manufacturing CRM by Soor LLC. Read-only, truthful access to the KanchanFlow product catalog, pricing, integrations, roadmap and reference documentation.",
+  "description": "Model Context Protocol server for KanchanFlow \u2014 the RFQ-to-Order manufacturing CRM by Soor LLC. Read-only, truthful access to the KanchanFlow product catalog, pricing, integrations, roadmap and reference documentation.",
   "license": "MIT",
   "author": "Soor LLC",
   "homepage": "https://kanchanflow.com/mcp",
@@ -13,6 +13,7 @@
   "files": [
     "dist",
     "data/site-mirror.json",
+    "assets",
     "reference",
     "README.md",
     "LICENSE"
