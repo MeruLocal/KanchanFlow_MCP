@@ -16,6 +16,8 @@ kanchanflow-mcp/
 └── src/
     ├── index.ts                 entry point
     ├── server.ts                MCP assembly + stdio and HTTP transports
+    ├── homepage.ts              the HTML page the HTTP transport serves at /
+    ├── assets.ts                allowlisted brand artwork for that page
     ├── server-info.ts           advertised identity and client instructions
     ├── config.ts                environment configuration
     ├── errors.ts                the error vocabulary
@@ -97,7 +99,10 @@ content tools keep working.
 **stdio** (default) — the MCP host spawns the process and speaks MCP over
 stdin/stdout. Logs go to stderr, because stdout is the protocol channel.
 
-**Streamable HTTP** — a plain `node:http` server. Each request gets a fresh
+**Streamable HTTP** — a plain `node:http` server. It also serves a generated
+homepage at `/` and the brand artwork that page references from a three-entry
+allowlist; both are public, `GET`/`HEAD` only, and carry ETags. See
+`api/endpoints.md`. Each request gets a fresh
 `McpServer` and transport in stateless mode, so no state is shared between
 callers and one session can never observe another. `/health` answers without a
 token for orchestrators; everything else is served at the configured MCP path.

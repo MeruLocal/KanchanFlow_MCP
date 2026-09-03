@@ -28,6 +28,35 @@ Request handling, in order:
 The client key is a rate-limit input only. It is never an authorization input,
 because a forwarded header is caller-controlled.
 
+## `GET /`
+
+A human-readable homepage, generated from the same registries the protocol
+advertises — `allTools`, `prompts`, `siteResources`, `referenceResources` — so a
+tool added to the registry appears on it at the next boot and the page cannot
+drift from what `tools/list` returns. Built once and served from a cached string
+with an ETag.
+
+Reachable without a token: it contains nothing a client could not already list.
+`GET` and `HEAD` only; anything else is `405` with an `Allow` header.
+
+## `GET /assets/brand/<file>`
+
+The brand artwork the homepage references: the KanchanFlow lockup for a light
+ground, the lockup for a dark ground, and the browser-tab icon. `GET`/`HEAD`,
+public, `Cache-Control: public, max-age=86400`, with a content-hash ETag so a
+revalidation is a `304`.
+
+`GET /favicon.ico` is an alias onto the icon, so a browser asking for one by
+convention gets it rather than leaving a 404 in the log.
+
+This is **not** a static file server. `src/assets.ts` holds a fixed allowlist of
+three filenames, and a request is matched against that list rather than joined
+onto a directory and read — so there is no path that reaches the filesystem and
+nothing to traverse out of. Anything not on the list falls through to the 404
+below. The files arrive via `npm run sync`, copied from the website repository;
+when they are absent the homepage falls back to a typographic mark rather than
+linking a broken image.
+
 ## `GET /health`
 
 Liveness, always reachable without a token so an orchestrator can use it:
