@@ -3,8 +3,9 @@
 #   docker build -t kanchanflow-mcp .
 #   docker run --rm -p 3010:3010 -e KANCHANFLOW_MCP_PUBLIC_URL=https://mcp.kanchanflow.com kanchanflow-mcp
 #
-# Behind a reverse proxy that appends X-Forwarded-For, also set
-# KANCHANFLOW_MCP_TRUST_PROXY=1 so the rate limit is per visitor.
+# Behind reverse proxies that append X-Forwarded-For, also set
+# KANCHANFLOW_MCP_TRUST_PROXY to the number of proxy hops (2 behind
+# Cloudflare then Apache) so the rate limit is per visitor.
 
 # ---- build ---------------------------------------------------------------
 FROM node:22-alpine AS build
@@ -31,5 +32,5 @@ COPY --chown=node:node reference ./reference
 USER node
 EXPOSE 3010
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3010/health >/dev/null || exit 1
+  CMD wget -qO- "http://127.0.0.1:${KANCHANFLOW_MCP_PORT:-3010}/health" >/dev/null || exit 1
 CMD ["node", "dist/index.js"]
