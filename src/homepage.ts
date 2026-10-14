@@ -20,6 +20,7 @@ import { prompts } from "./prompts/index.js";
 import { referenceResources, siteResources } from "./resources/index.js";
 import { allTools } from "./tools/index.js";
 import { companyTools } from "./tools/company.js";
+import { getStartedTools } from "./tools/get-started.js";
 import { contentTools } from "./tools/content.js";
 import { featureTools } from "./tools/features.js";
 import { integrationTools } from "./tools/integrations.js";
@@ -111,6 +112,7 @@ interface Category {
 
 const CATEGORIES: Category[] = [
   { title: "Company", blurb: "Who KanchanFlow is and what it claims.", tools: companyTools },
+  { title: "Get started", blurb: "Trial, demo, contact and pricing links.", tools: getStartedTools },
   {
     title: "Features",
     blurb: "The catalog, with live / beta / building / planned status.",

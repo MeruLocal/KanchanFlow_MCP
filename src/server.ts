@@ -24,6 +24,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { loadConfig, type Config } from "./config.js";
 import { toErrorPayload, ToolError } from "./errors.js";
 import { allTools } from "./tools/index.js";
+import { finalizePayload, isCapped, serialise } from "./tools/finalize.js";
 import { prompts } from "./prompts/index.js";
 import {
   readReferenceResource,
@@ -58,11 +59,19 @@ const READ_ONLY_ANNOTATIONS = {
 export interface RequestContext {
   /** Product token of the caller's User-Agent (see utils/user-agent.ts). */
   client?: string;
+  /**
+   * Public origin (KANCHANFLOW_MCP_PUBLIC_URL). When set, the server info
+   * carries the brand icon as an absolute URL.
+   */
+  publicUrl?: string | null;
 }
 
 export function buildServer(ctx: RequestContext = {}): McpServer {
+  const icons = ctx.publicUrl
+    ? [{ src: `${ctx.publicUrl}${ICON_URL}`, mimeType: "image/png", sizes: ["192x192"] }]
+    : undefined;
   const server = new McpServer(
-    { name: SERVER_NAME, title: SERVER_TITLE, version: SERVER_VERSION },
+    { name: SERVER_NAME, title: SERVER_TITLE, version: SERVER_VERSION, ...(icons ? { icons } : {}) },
     {
       capabilities: { tools: {}, resources: {}, prompts: {} },
       instructions: SERVER_INSTRUCTIONS,
@@ -77,6 +86,7 @@ export function buildServer(ctx: RequestContext = {}): McpServer {
         title: tool.title,
         description: tool.description,
         inputSchema: tool.inputSchema,
+        ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
         annotations: { title: tool.title, ...READ_ONLY_ANNOTATIONS },
       },
       // The SDK has already validated args against the tool's input schema by
@@ -85,16 +95,25 @@ export function buildServer(ctx: RequestContext = {}): McpServer {
         const requestId = randomUUID();
         const started = Date.now();
         try {
-          const payload = tool.handler(args ?? {});
+          // Freshness, UTM tags and the size cap, applied once so the text
+          // and structuredContent are the same object.
+          const payload = finalizePayload(tool, tool.handler(args ?? {}));
+          const over = isCapped(payload);
           logger.info("tool.call", {
             requestId,
             tool: tool.name,
             ...(ctx.client ? { client: ctx.client } : {}),
             argKeys: Object.keys(args ?? {}),
-            outcome: "success",
+            outcome: over ? "capped" : "success",
             durationMs: Date.now() - started,
           });
-          return { content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }] };
+          const content = [{ type: "text" as const, text: serialise(payload) }];
+          if (!tool.outputSchema) return { content };
+          // A capped payload does not match the tool's output schema; report
+          // it as an error result (which the SDK does not validate) carrying
+          // the same note on how to narrow the request.
+          if (over) return { content, isError: true };
+          return { content, structuredContent: payload as Record<string, unknown> };
         } catch (err) {
           const payload = toErrorPayload(err);
           logger.warn("tool.call", {
@@ -180,8 +199,8 @@ export function buildServer(ctx: RequestContext = {}): McpServer {
 /* stdio                                                               */
 /* ------------------------------------------------------------------ */
 
-async function runStdio(): Promise<void> {
-  const server = buildServer();
+async function runStdio(config: Config): Promise<void> {
+  const server = buildServer({ publicUrl: config.publicUrl });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   logger.info("server.ready", {
@@ -505,7 +524,7 @@ export function createHttpServer(config: Config, deps: HttpDeps = {}): http.Serv
       // A fresh server and transport per request: stateless mode. Nothing is
       // shared between callers, so one session can never observe another.
       try {
-        const server = build({ client: ua });
+        const server = build({ client: ua, publicUrl: config.publicUrl });
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
         res.on("close", () => {
           void transport.close();
@@ -582,5 +601,5 @@ export async function runServer(config: Config = loadConfig()): Promise<void> {
     await runHttp(config);
     return;
   }
-  await runStdio();
+  await runStdio(config);
 }

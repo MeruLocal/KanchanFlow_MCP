@@ -1,0 +1,80 @@
+name: Sync content
+
+# Weekly: regenerate data/ and reference/site/ from the website repository and
+# open a DRAFT pull request with the result. Never pushes to main.
+#
+# Needs, in this repository's settings:
+#   - secret   WEBSITE_REPO_TOKEN  read-only token (fine-grained PAT or deploy key) for the website repo
+#   - variable WEBSITE_REPO        the website repo as owner/name
+# Without both, the job stops early with a notice instead of failing.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check access to the website repository
+        id: access
+        env:
+          TOKEN: ${{ secrets.WEBSITE_REPO_TOKEN }}
+          REPO: ${{ vars.WEBSITE_REPO }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$REPO" ]; then
+            echo "::notice::WEBSITE_REPO_TOKEN secret or WEBSITE_REPO variable is not set; skipping the content sync."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.access.outputs.ok == 'true'
+        with:
+          path: mcp
+
+      # scripts/sync-content.mjs looks for the website repo at ../KanchanFlow.
+      - uses: actions/checkout@v4
+        if: steps.access.outputs.ok == 'true'
+        with:
+          repository: ${{ vars.WEBSITE_REPO }}
+          token: ${{ secrets.WEBSITE_REPO_TOKEN }}
+          path: KanchanFlow
+
+      - uses: actions/setup-node@v4
+        if: steps.access.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+
+      - name: Sync and test
+        if: steps.access.outputs.ok == 'true'
+        working-directory: mcp
+        run: |
+          npm ci
+          npm run sync
+          npm test
+
+      - name: Open a draft pull request
+        if: steps.access.outputs.ok == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          path: mcp
+          branch: automation/content-sync
+          draft: true
+          title: "Content sync from the website repository"
+          commit-message: "Sync content mirror from the website repository"
+          body: |
+            Automated weekly `npm run sync`. Review the diff in `data/` and `reference/site/`
+            before merging; the brand guard and the full test suite passed on this run.
+          add-paths: |
+            data/
+            reference/site/
+            assets/brand/

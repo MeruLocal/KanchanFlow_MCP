@@ -40,6 +40,11 @@ export interface Entity {
   [key: string]: unknown;
 }
 
+export interface CtaLink {
+  label: string;
+  href: string;
+}
+
 export interface Brand {
   name: string;
   legalProduct: string;
@@ -48,8 +53,13 @@ export interface Brand {
   tagline: string;
   h1: string;
   sub: string;
+  /** Main call to action, e.g. the demo. */
+  primaryCta?: CtaLink;
+  secondaryCta?: CtaLink;
+  /** The free-trial call to action. */
+  trialCta?: CtaLink;
   entity: Entity;
-  compliance: { label: string; verified: boolean; note?: string }[];
+  compliance: { label: string; verified: boolean; note?: string; evidence?: string }[];
   trustBadges: { label: string; detail: string }[];
   social: Record<string, string>;
   sameAs: string[];

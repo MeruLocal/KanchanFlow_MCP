@@ -10,6 +10,7 @@
 import { companyTools } from "./company.js";
 import { contentTools } from "./content.js";
 import { featureTools } from "./features.js";
+import { getStartedTools } from "./get-started.js";
 import { integrationTools } from "./integrations.js";
 import { marketTools } from "./markets.js";
 import { partnerTools } from "./partners.js";
@@ -32,6 +33,7 @@ export const allTools: ToolDefinition[] = [
   ...siteTools,
   ...searchTools,
   ...referenceTools,
+  ...getStartedTools,
 ];
 
 export const NAME_PATTERN = /^kanchanflow_[a-z]+(?:_[a-z0-9]+)*$/;

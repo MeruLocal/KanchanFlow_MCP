@@ -62,7 +62,9 @@ describe("ReferenceLoader against the packaged reference folder", () => {
   it("truncates when asked and says so", () => {
     const doc = loader.read("mcp/security.md", 200);
     expect(doc.truncated).toBe(true);
-    expect(doc.content).toContain("[truncated at 200 characters");
+    expect(doc.content).toHaveLength(200);
+    expect(doc.nextOffset).toBe(200);
+    expect(doc.note).toContain("offset 200");
   });
 
   it("caches a body rather than re-reading it", () => {

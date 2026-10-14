@@ -13,6 +13,7 @@ import { z } from "zod";
 import { getFeature, loadMirror, suggestSlugs } from "../data/mirror.js";
 import { notFound, ok } from "../errors.js";
 import { matches, paginate, type ToolDefinition } from "./tool-types.js";
+import { listFeaturesOutput } from "./output-schemas.js";
 import type { Feature } from "../data/types.js";
 
 const STATUSES = ["live", "beta", "building", "planned"] as const;
@@ -68,6 +69,7 @@ const listFeatures: ToolDefinition<{
     limit: z.number().int().min(1).max(200).optional().describe("Page size. Default 25."),
     offset: z.number().int().min(0).optional().describe("Records to skip. Default 0."),
   },
+  outputSchema: listFeaturesOutput,
   handler: ({ status, category, tier, query, limit, offset }) => {
     const m = loadMirror();
     const cat = category?.toLowerCase().trim();

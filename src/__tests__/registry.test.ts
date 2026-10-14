@@ -14,7 +14,7 @@ import { siteResources } from "../resources/index.js";
 
 describe("tool registry", () => {
   it("registers every tool", () => {
-    expect(allTools.length).toBe(24);
+    expect(allTools.length).toBe(25);
     expect(toolsByName.size).toBe(allTools.length);
   });
 

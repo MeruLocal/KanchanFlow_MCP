@@ -25,7 +25,7 @@ const getPartnerProgram: ToolDefinition<{ section?: PartnerSection }> = {
   description: [
     "Returns the published partner program: partner types, tiers and their commission rates, the program guardrails, the certification tracks and policy, what sits behind the partner portal, the application review commitment, and the partner FAQs.",
     "",
-    "Use it for 'how do I become a KanchanFlow partner', 'what commission do partners earn', 'is there an exclusive territory'. Optional `section` returns one part of the program.",
+    "Use it for 'how do I become a KanchanFlow partner', 'what commission do partners earn', 'is there an exclusive territory'. Optional `section` returns one part of the program. Without it, certification tracks are summarised (id, name, hours, summary) to keep the response small; pass `section: 'certificationTracks'` for prerequisites, assessments and module lists.",
     "",
     "The public partner directory is currently empty — there are no listed partners yet. Say so rather than implying a partner network exists.",
   ].join("\n"),
@@ -61,6 +61,16 @@ const getPartnerProgram: ToolDefinition<{ section?: PartnerSection }> = {
     };
 
     const body: Record<string, unknown> = section ? { [section]: full[section] } : { ...full };
+    if (!section) {
+      body.certificationTracks = (p.certificationTracks as Record<string, unknown>[]).map((t) => ({
+        id: t.id,
+        name: t.name,
+        hours: t.hours,
+        summary: t.summary,
+      }));
+      body.certificationTracksNote =
+        "Summarised. Call again with section: 'certificationTracks' for prerequisites, assessment and modules.";
+    }
 
     return ok({
       ...body,
