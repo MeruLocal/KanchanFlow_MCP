@@ -14,9 +14,8 @@ invent alternatives.
    `faqSchema` export. Do not add one.
 2. **NEVER emit `Review` or `AggregateRating`** — no third-party review data
    exists yet.
-3. **NEVER mention "Meru Technosoft", "HelloGrowthCRM", "HelloGrowth", "HGC"
-   or "hellocrm"** anywhere in shipped copy. The only company named on this
-   site is **Soor LLC**.
+3. **NEVER name any company other than Soor LLC** anywhere in shipped copy.
+   The only company named on this site is **Soor LLC**.
 4. **NEVER fabricate customer logos, testimonials, counts or case studies.**
    At launch there are zero named customers on this brand. Use the trust
    ladder (Delaware LLC / SOC 2 Type II / USA data centers / open changelog /
