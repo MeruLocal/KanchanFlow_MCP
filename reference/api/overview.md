@@ -11,9 +11,9 @@ server declares three capabilities:
 
 | Capability | What it offers |
 |---|---|
-| `tools` | 24 read-only query tools over the KanchanFlow content mirror and reference set |
+| `tools` | Read-only query tools over the KanchanFlow content mirror and reference set (`tools/list` has the live list) |
 | `resources` | Whole collections as JSON, plus every reference document as markdown |
-| `prompts` | Five reusable procedures for answering KanchanFlow questions accurately |
+| `prompts` | Reusable procedures for answering KanchanFlow questions accurately |
 
 Protocol version negotiation is handled by the SDK. This server pins no version
 of its own.

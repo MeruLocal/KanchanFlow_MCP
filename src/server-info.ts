@@ -9,7 +9,8 @@
 
 export const SERVER_NAME = "kanchanflow";
 export const SERVER_TITLE = "KanchanFlow";
-export const SERVER_VERSION = "1.0.0";
+/** From package.json (src/utils/package-version.ts), so the two cannot drift. */
+export { PACKAGE_VERSION as SERVER_VERSION } from "./utils/package-version.js";
 export const SERVER_DESCRIPTION =
   "Read-only access to what KanchanFlow — the RFQ-to-Order manufacturing CRM by Soor LLC — publishes: the feature catalog with truthful status, pricing and the feature-gate matrix, the connector catalog, the glossary, the changelog and roadmap, and the project's reference documentation. It holds no customer data and cannot create, change or delete anything.";
 

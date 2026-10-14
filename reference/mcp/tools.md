@@ -1,6 +1,6 @@
 # Tools
 
-24 tools, all read-only, all named `kanchanflow_<action>_<resource>`. The
+Every tool is read-only and named `kanchanflow_<action>_<resource>`. The
 registry in `src/tools/index.ts` asserts both properties at startup.
 
 The descriptions below are summaries. The authoritative text — what each tool

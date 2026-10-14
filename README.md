@@ -10,7 +10,8 @@ halves with the same confidence. That is how a prospect gets told a feature is
 available when it is still in development. This server exists so an assistant can
 check instead of guess.
 
-**24 read-only tools · 8 JSON resources · 30 reference documents · 5 prompts**
+**Read-only tools, JSON resources, reference documents and prompts.** Every tool
+is read-only. For the live list, open the HTTP homepage (`/`) or call `tools/list`.
 
 ---
 
@@ -166,9 +167,10 @@ stdio server, which is the normal desktop setup. See [`.env.example`](.env.examp
 | `npm run mcp:dev` | Run from source with `tsx watch` |
 | `npm run sync` | Regenerate `data/site-mirror.json` and `reference/site/` |
 | `npm run build` | Compile TypeScript to `dist/` |
-| `npm run typecheck` | `tsc --noEmit` |
+| `npm run typecheck` | Type-check `src/` **and the tests** (`tsconfig.test.json`) |
+| `npm run check:versions` | `server.json` versions equal `package.json` (the single version source) |
 | `npm test` | Vitest |
-| `npm run verify` | Typecheck then test |
+| `npm run verify` | Typecheck, version parity, then test |
 
 ---
 
@@ -178,7 +180,7 @@ stdio server, which is the normal desktop setup. See [`.env.example`](.env.examp
 npm test
 ```
 
-141 tests across six suites:
+The suites:
 
 - **`reference-loader`** — indexing, determinism, truncation, caching, and the
   traversal guard against absolute paths, `..` segments, Windows drive paths, NUL
@@ -227,6 +229,11 @@ Security contact: `security@kanchanflow.com`.
 
 **stdio** — ship `dist/`, `data/site-mirror.json` and `reference/`. The `files`
 field in `package.json` already scopes a publish to those.
+
+**Container** — the `Dockerfile` builds a non-root `node:22-alpine` image that
+serves HTTP on port 3010 with a `/health` check. `server.json` is the MCP
+Registry manifest (DNS namespace `com.kanchanflow/mcp`); nothing is published
+from this repo automatically.
 
 **HTTP** — set `KANCHANFLOW_MCP_TRANSPORT=http` and a port, put it behind TLS,
 and set `KANCHANFLOW_MCP_AUTH_TOKEN` if the instance should be private. `/health`
