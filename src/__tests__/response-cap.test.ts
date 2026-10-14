@@ -1,14 +1,18 @@
 /** Responses stay under ~25k characters; long reads and searches page. */
 
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 import { loadMirror } from "../data/mirror.js";
-import { MAX_SLICE_CHARS, referenceLoader } from "../reference/index.js";
+import { MAX_SLICE_CHARS, ReferenceLoader, referenceLoader } from "../reference/index.js";
 import { SERVER_INSTRUCTIONS } from "../server-info.js";
-import { finalizePayload, MAX_RESPONSE_CHARS } from "../tools/finalize.js";
-import { allTools, type ToolDefinition } from "../tools/index.js";
+import { finalizePayload, isCapped, MAX_RESPONSE_CHARS, serialise } from "../tools/finalize.js";
+import { allTools, toolsByName, type ToolDefinition } from "../tools/index.js";
 import { connect, textPayload } from "./helpers/client.js";
 
 let client: Client;
@@ -72,23 +76,28 @@ describe("size", () => {
 });
 
 describe("reference maxChars ceiling", () => {
-  it("maxChars = MAX_SLICE_CHARS on the largest document is not capped by the response limit", async () => {
+  it("maxChars = MAX_SLICE_CHARS on the largest document is not capped by the response limit", () => {
     const doc = [...referenceLoader().list()].sort((a, b) => b.bytes - a.bytes)[0]!;
-    const result = await client.callTool({
-      name: "kanchanflow_get_reference_document",
-      arguments: { path: doc.path, maxChars: MAX_SLICE_CHARS },
-    });
-    const text = (result.content as { text: string }[])[0]!.text;
-    expect(result.isError).toBeFalsy();
-    const payload = JSON.parse(text);
-    const full = referenceLoader().read(doc.path, 1_000_000).content;
-    expect(full.length).toBeGreaterThan(MAX_SLICE_CHARS);
+    const real = referenceLoader().read(doc.path, 1_000_000).content;
+    // Repeat the largest real document until it is longer than one slice, so
+    // the test holds however small the shipped documents are.
+    const body = real.repeat(Math.ceil((MAX_SLICE_CHARS * 2) / Math.max(1, real.length)));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kf-ref-"));
+    try {
+      fs.writeFileSync(path.join(dir, "big.md"), body);
+      const slice = new ReferenceLoader(dir).read("big.md", MAX_SLICE_CHARS);
+      expect(slice.content.length).toBe(MAX_SLICE_CHARS);
+      const tool = toolsByName.get("kanchanflow_get_reference_document")!;
+      const out = finalizePayload(tool, { success: true, data: slice });
+      expect(isCapped(out)).toBe(false);
+      expect(serialise(out).length).toBeLessThan(MAX_RESPONSE_CHARS);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("the advertised ceiling is below the response limit", () => {
     expect(MAX_SLICE_CHARS).toBeLessThan(MAX_RESPONSE_CHARS);
-    // The tool's own slice is as long as asked: finalize did not replace it.
-    expect(payload.success).toBe(true);
-    expect(payload.note ?? "").not.toMatch(/narrow/i);
-    expect(text).toContain("nextOffset");
-    expect(text.length).toBeLessThan(MAX_RESPONSE_CHARS);
   });
 });
 
