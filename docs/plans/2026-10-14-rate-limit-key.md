@@ -1,6 +1,6 @@
 # Plan: key the HTTP rate limit on the socket, not X-Forwarded-For
 
-- **Severity:** P1 (abuse/DoS control can be bypassed)
+- **Severity:** P0 (rate-limit bypass; the audit skill rates S4 as P0 when the limiter can be bypassed. Was P1.)
 - **Effort:** S
 - **Status:** plan only. Implementation follows after approval.
 
@@ -17,7 +17,7 @@
    The body cap is 1 MB (server.ts:182), so one query can be close to 1 MB and is scanned against every document.
 3. **Default limit.** The default is 120/min (src/config.ts). The shared convention across our MCP servers is 60/min.
 
-**Audit baseline** (local HTTP :3010, path `/mcp`): 3 fail · 3 warn · 11 pass. The script does not test rate limiting.
+**Audit baseline.** Earlier script: 3 fail · 3 warn · 11 pass. **Re-audit (2026-10-14 13:18 UTC, new skill and script, local :3937, path `/mcp`):** 3 fail · 6 warn · 26 pass. The new script **does** probe the limiter: `WARN X.rate_limit no 429 in 70 rapid requests`, because the default is 120/min. With the 60/min default below, the same probe should see a 429. It does not rotate `X-Forwarded-For`, so the bypass itself is still proved by the HTTP test below, not by the script.
 
 **Not checked:** the real Cloudflare to Apache to Node chain in production.
 
