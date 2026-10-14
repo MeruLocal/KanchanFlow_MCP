@@ -17,8 +17,15 @@ function int(value: string | undefined, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
-function flag(value: string | undefined): boolean {
-  return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
+/**
+ * Number of trusted proxy hops. 0 = none (use the socket address). Legacy
+ * true/yes/1 mean 1. Anything unparsable or negative means 0.
+ */
+export function parseTrustProxy(value: string | undefined): number {
+  const v = (value ?? "").trim().toLowerCase();
+  if (v === "true" || v === "yes") return 1;
+  if (!/^\d{1,2}$/.test(v)) return 0;
+  return Number(v);
 }
 
 function list(value: string | undefined, fallback: readonly string[]): string[] {
@@ -79,7 +86,7 @@ export interface Config {
    * trusted reverse proxy appended) instead of the socket address. Only turn
    * this on behind a proxy that appends the header.
    */
-  trustProxy: boolean;
+  trustProxy: number;
   /** Interface the HTTP transport binds. Loopback unless set. */
   host: string;
   /** Host header names (port ignored) the MCP endpoint answers. ["*"] disables the check. */
@@ -111,7 +118,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     path,
     authToken: token ? token : null,
     rateLimitPerMinute: int(env.KANCHANFLOW_MCP_RATE_LIMIT, 60),
-    trustProxy: flag(env.KANCHANFLOW_MCP_TRUST_PROXY) || flag(env.TRUST_PROXY),
+    trustProxy: parseTrustProxy(env.KANCHANFLOW_MCP_TRUST_PROXY ?? env.TRUST_PROXY),
     host: env.KANCHANFLOW_MCP_HOST?.trim() || env.HOST?.trim() || "127.0.0.1",
     allowedHosts: list(env.KANCHANFLOW_MCP_ALLOWED_HOSTS, DEFAULT_ALLOWED_HOSTS).map((h) => h.toLowerCase()),
     allowedOrigins: list(env.KANCHANFLOW_MCP_ALLOWED_ORIGINS, DEFAULT_ALLOWED_ORIGINS),

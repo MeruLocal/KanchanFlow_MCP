@@ -238,9 +238,8 @@ export class BadJson extends Error {
 function bearerToken(req: http.IncomingMessage): string | null {
   const header = req.headers.authorization;
   if (!header || Array.isArray(header)) return null;
-  const [scheme, value] = header.split(" ");
-  if (!value || scheme?.toLowerCase() !== "bearer") return null;
-  return value.trim();
+  const match = /^Bearer\s+(\S+)$/i.exec(header.trim());
+  return match ? match[1]! : null;
 }
 
 /**

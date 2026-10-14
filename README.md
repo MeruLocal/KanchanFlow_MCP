@@ -151,8 +151,8 @@ stdio server, which is the normal desktop setup. See [`.env.example`](.env.examp
 | `KANCHANFLOW_MCP_PATH` | `/mcp` | HTTP endpoint path |
 | `KANCHANFLOW_MCP_AUTH_TOKEN` | unset | Bearer token for a private HTTP instance |
 | `KANCHANFLOW_MCP_RATE_LIMIT` | `60` | Requests per client per minute; `0` disables |
-| `KANCHANFLOW_MCP_TRUST_PROXY` (or `TRUST_PROXY`) | off | `1`/`true`/`yes`: key the limiter on the right-most `X-Forwarded-For` hop. Set it behind a proxy that **appends** the header |
-| `KANCHANFLOW_MCP_HOST` (or `HOST`) | `127.0.0.1` | HTTP bind address. Containers and remote hosts need `0.0.0.0` |
+| `KANCHANFLOW_MCP_TRUST_PROXY` (or `TRUST_PROXY`) | `0` | Number of trusted proxy hops. `0` keys the limiter on the socket address; `N` keys on the `N`th-from-right `X-Forwarded-For` entry (short header falls back to the socket). `true`/`yes`/`1` mean `1`; unparsable means `0`. `CF-Connecting-IP` is never read |
+| `KANCHANFLOW_MCP_HOST` (or `HOST`) | `127.0.0.1` | HTTP bind address. Keep loopback when the reverse proxy runs on the same host; use `0.0.0.0` only inside containers |
 | `KANCHANFLOW_MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1],mcp.kanchanflow.com` | Host names (port ignored) the MCP endpoint answers; `*` disables the check |
 | `KANCHANFLOW_MCP_ALLOWED_ORIGINS` | `https://mcp.kanchanflow.com,https://kanchanflow.com,https://www.kanchanflow.com,http://localhost:*,http://127.0.0.1:*` | Browser origins allowed on the MCP endpoint (`:*` = any port); `*` allows any |
 | `KANCHANFLOW_MCP_PUBLIC_URL` | unset | Public origin, e.g. `https://mcp.kanchanflow.com`. Used for `/.well-known/mcp.json` and the homepage; never derived from `Host` |
@@ -242,7 +242,9 @@ answers without a token for orchestrators. The server binds `127.0.0.1` unless
 `HOST`/`KANCHANFLOW_MCP_HOST` says otherwise, answers only the Host names in
 `KANCHANFLOW_MCP_ALLOWED_HOSTS`, and refuses browser Origins not on
 `KANCHANFLOW_MCP_ALLOWED_ORIGINS`. Behind a reverse proxy, set
-`KANCHANFLOW_MCP_TRUST_PROXY=1` (the proxy must append `X-Forwarded-For`), or
+`KANCHANFLOW_MCP_TRUST_PROXY` to the number of proxies in front: `2` behind
+Cloudflare then Apache, or configure Apache `mod_remoteip` with Cloudflare's
+ranges and use `1`. Each proxy must append to `X-Forwarded-For`. Left at `0`,
 every visitor shares the proxy's rate-limit bucket. Set
 `KANCHANFLOW_MCP_PUBLIC_URL` so `/.well-known/mcp.json` and the homepage name
 the public endpoint. The rate limiter is per process, so a
