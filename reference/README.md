@@ -19,7 +19,7 @@ every surface that quotes it changes on the next server start.
 | `mcp/` | The MCP integration itself: tools, resources, prompts, security posture and worked examples |
 | `data-model/` | The entities the mirror carries and the shape of each content collection |
 | `examples/` | Tool-by-tool usage and end-to-end agent workflows |
-| `site/` | **Synced.** Verbatim copies of the website repository's own contract and SEO documentation |
+| `site/` | **Synced.** Copies of the website repository's own build contract and README |
 
 ## What is authored and what is generated
 

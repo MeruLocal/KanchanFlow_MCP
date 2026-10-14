@@ -7,14 +7,14 @@ KanchanFlow website repo
   content/brand.js        content/pricing.js     content/features.js
   content/integrations.js content/countries.js   content/blog.js
   content/glossary.js     content/changelog.js   content/partners.js
-  app/**/page.js          SPEC-CONTRACT.md       docs/seo/*.md
+  app/**/page.js          SPEC-CONTRACT.md       README.md
         |
         |  npm run sync            (scripts/sync-content.mjs)
         v
   data/site-mirror.json           reference/site/*.md
 ```
 
-`scripts/sync-content.mjs` does four things:
+`scripts/sync-content.mjs` does five things:
 
 1. **Locates the website repo** — `--repo <path>`, else `KANCHANFLOW_REPO`, else
    `../KanchanFlow`. It refuses to run against a directory with no
@@ -28,7 +28,14 @@ KanchanFlow website repo
    each `[slug]` segment from the collection that supplies it, so the map holds
    real URLs rather than templates.
 4. **Copies the website's own documents** into `reference/site/`, each with a
-   header naming its source, and writes `reference/site/MANIFEST.json`.
+   header naming its source, and writes `reference/site/MANIFEST.json`. Only the
+   build contract and the README are copied; the website's internal SEO planning
+   documents are not served.
+5. **Checks brand isolation before writing anything.** The mirror JSON and every
+   copied document pass `assertBrandClean` from `scripts/brand-guard.mjs`. A
+   match aborts the sync, so a forbidden company or brand name never reaches
+   this repo. The contract's own guardrail 3 is rewritten on copy
+   (`redactBrandGuardrail`) to state the rule without listing the names.
 
 Provenance is recorded in `meta`: the sync timestamp and the website repo's
 short commit hash. Every tool response carries `source.syncedAt`, so a client can

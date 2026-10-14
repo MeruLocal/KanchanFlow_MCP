@@ -14,6 +14,7 @@ import { toErrorPayload, ToolError } from "../errors.js";
 import { RateLimiter } from "../utils/rate-limiter.js";
 import { loadConfig } from "../config.js";
 import { loadMirror } from "../data/mirror.js";
+import { findBrandHits } from "../../scripts/brand-guard.mjs";
 
 describe("no write surface", () => {
   it("exposes only read tools", () => {
@@ -221,10 +222,9 @@ describe("no fabricated evidence reaches a client", () => {
     expect(text).not.toContain('"reviewcount"');
   });
 
-  it("names no parent brand the site contract forbids", () => {
-    const text = JSON.stringify(m).toLowerCase();
-    for (const banned of ["meru technosoft", "hellogrowthcrm", "hellocrm"]) {
-      expect(text, `mirror mentions ${banned}`).not.toContain(banned);
-    }
+  it("names no company or brand the site contract forbids", () => {
+    // The forbidden names live only as digests in scripts/brand-guard.mjs.
+    // The full surface scan is in brand-isolation.test.ts.
+    expect(findBrandHits(JSON.stringify(m))).toEqual([]);
   });
 });

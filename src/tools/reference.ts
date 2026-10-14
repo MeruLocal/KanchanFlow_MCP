@@ -21,7 +21,7 @@ const listReferenceDocuments: ToolDefinition<{ section?: string }> = {
   description: [
     "Lists the reference documentation shipped with this MCP server: path, title, section, size and a one-line summary for each document.",
     "",
-    "Sections cover the KanchanFlow architecture, the API surface, the MCP integration itself (tools, resources, prompts, security), the data model, worked examples, and a synced copy of the website's own build contract and SEO documentation.",
+    "Sections cover the KanchanFlow architecture, the API surface, the MCP integration itself (tools, resources, prompts, security), the data model, worked examples, and a synced copy of the website's own build contract and README.",
     "",
     "Use it to find the right document, then read it with kanchanflow_get_reference_document. Optional `section` narrows the list.",
   ].join("\n"),
