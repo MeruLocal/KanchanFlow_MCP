@@ -18,10 +18,11 @@
 
 **Measured.** A prototype of the test below failed 5 of 12 cases against main: reference docs, resources, search, published files, and the SEO-docs presence check.
 
-**Audit baseline.** `audit-live-mcp.mjs` against local HTTP on :3010, with the endpoint path set to `/mcp`: 3 fail · 3 warn · 11 pass. None of these results is about content.
+**Audit baseline.** Earlier script: 3 fail · 3 warn · 11 pass. **Re-audit (2026-10-14 13:18 UTC, new skill and script, local :3937, path `/mcp`):** 3 fail · 6 warn · 26 pass. The script's brand checks (`C9.payloads`) **pass**, because it scans only the self-description and one sample tool output (`kanchanflow_get_pricing`). It never reads the reference documents, so a pass there does not clear this finding; the test below is what proves it.
+
+**npm, measured 2026-10-14:** `https://registry.npmjs.org/kanchanflow-mcp` returns 404. No version has been published, so the docs have not reached npm.
 
 **Not checked:**
-- whether an npm version is already published
 - the website repo's own copies of these docs
 - the live site
 
@@ -55,6 +56,6 @@ The same file also asserts that no `site/seo/` document is indexed or present.
 ## Risks, rollout and founder decisions
 
 - **Founder decision on git history.** History still contains the SEO docs and the old contract line. Removing them needs a history rewrite (filter-repo plus a force-push on main) or making the repo private.
-- **Founder decision on npm.** Any npm version already published still ships the docs. If one exists, deprecate or unpublish it.
+- **npm.** Nothing is published (404, measured), so no unpublish is needed. Merge this plan **before** any first publish (see the npx-name plan).
 - **Website repo.** The website repo's README/contract may contain the same names. Fix them there, or the sync guard will stop the next sync, which is the intended behaviour.
 - **Risk.** Low: content removal plus a test.
