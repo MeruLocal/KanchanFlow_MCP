@@ -15,18 +15,34 @@ callers, so one session can never observe another's.
 
 Request handling, in order:
 
-1. **Rate limit** — fixed window per client key, from the first
-   `X-Forwarded-For` hop or the socket address. Over the limit gets `429` with
-   `Retry-After`. `KANCHANFLOW_MCP_RATE_LIMIT` sets the per-minute allowance;
-   `0` disables it.
-2. **Authentication** — bearer token, when `KANCHANFLOW_MCP_AUTH_TOKEN` is set.
-   See `api/authentication.md`.
-3. **Body size** — anything over 1 MB is refused unread.
-4. **MCP dispatch** — the SDK parses and validates the JSON-RPC envelope and the
-   tool arguments against each tool's schema.
+1. **Host and Origin** — a `Host` not in `KANCHANFLOW_MCP_ALLOWED_HOSTS` (port
+   ignored) gets `403`. A request with an `Origin` header not in
+   `KANCHANFLOW_MCP_ALLOWED_ORIGINS` (and not this server's own origin) gets
+   `403`; an allowed one gets CORS headers, and `OPTIONS` gets a `204`
+   preflight. Requests with no `Origin` (desktop and server clients) skip the
+   Origin check. This closes DNS rebinding.
+2. **Rate limit** — fixed window per client key: the socket address, or with
+   `KANCHANFLOW_MCP_TRUST_PROXY=1` the right-most `X-Forwarded-For` hop (the
+   one the trusted proxy appended). Over the limit gets `429` with
+   `Retry-After`. `KANCHANFLOW_MCP_RATE_LIMIT` sets the per-minute allowance
+   (default 60); `0` disables it.
+3. **Authentication** — bearer token, when `KANCHANFLOW_MCP_AUTH_TOKEN` is set,
+   compared in constant time over SHA-256 digests. See `api/authentication.md`.
+4. **Body** — read and parsed before any server is built. Over 1 MB is `413`;
+   invalid JSON is `400` with a JSON-RPC `-32700` parse error.
+5. **MCP dispatch** — the SDK validates the JSON-RPC envelope and the tool
+   arguments against each tool's schema. A failure inside the server is `500`
+   `INTERNAL_ERROR` with a generic message; the detail is logged server-side.
 
-The client key is a rate-limit input only. It is never an authorization input,
-because a forwarded header is caller-controlled.
+The client key is a rate-limit input only. It is never an authorization input.
+
+## `GET /.well-known/mcp.json`
+
+Discovery document: `name`, `title`, `version`, `description`, `endpoint`
+(`KANCHANFLOW_MCP_PUBLIC_URL` + path when set, otherwise the relative path),
+`transport: "streamable-http"`, `stateless: true` and `auth` (`bearer` or
+`none`). No tool list: agents call `tools/list`. Public, `GET`/`HEAD` only,
+`Access-Control-Allow-Origin: *`, cached for an hour.
 
 ## `GET /`
 

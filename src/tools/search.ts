@@ -53,7 +53,7 @@ const search: ToolDefinition<{ query: string; types?: ResultType[]; limit?: numb
     "An empty result set means KanchanFlow publishes nothing on that term. Say that rather than filling the gap.",
   ].join("\n"),
   inputSchema: {
-    query: z.string().min(2).describe("Search term, at least two characters."),
+    query: z.string().min(2).max(200).describe("Search term, 2 to 200 characters."),
     types: z.array(z.enum(TYPES)).optional().describe("Collections to search. Default: all."),
     limit: z.number().int().min(1).max(50).optional().describe("Maximum results. Default 20."),
   },

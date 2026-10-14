@@ -102,10 +102,34 @@ Every variable is optional; `.env.example` documents them all.
 | `KANCHANFLOW_MCP_PORT` | `3010` | HTTP listen port |
 | `KANCHANFLOW_MCP_PATH` | `/mcp` | HTTP endpoint path |
 | `KANCHANFLOW_MCP_AUTH_TOKEN` | unset | Bearer token for a private HTTP instance |
-| `KANCHANFLOW_MCP_RATE_LIMIT` | `120` | Requests per IP per minute; `0` disables |
+| `KANCHANFLOW_MCP_RATE_LIMIT` | `60` | Requests per client per minute; `0` disables |
+| `KANCHANFLOW_MCP_TRUST_PROXY` (or `TRUST_PROXY`) | off | `1`/`true`/`yes`: key the limiter on the right-most `X-Forwarded-For` hop. Set it behind a proxy that **appends** the header |
+| `KANCHANFLOW_MCP_HOST` (or `HOST`) | `127.0.0.1` | HTTP bind address. Containers and remote hosts need `0.0.0.0` |
+| `KANCHANFLOW_MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1],mcp.kanchanflow.com` | Host names (port ignored) the MCP endpoint answers; `*` disables the check |
+| `KANCHANFLOW_MCP_ALLOWED_ORIGINS` | `https://mcp.kanchanflow.com,https://kanchanflow.com,https://www.kanchanflow.com,http://localhost:*,http://127.0.0.1:*` | Browser origins allowed on the MCP endpoint (`:*` = any port); `*` allows any |
+| `KANCHANFLOW_MCP_PUBLIC_URL` | unset | Public origin, e.g. `https://mcp.kanchanflow.com`. Used for `/.well-known/mcp.json` and the homepage; never derived from `Host` |
 | `KANCHANFLOW_MCP_LOG_LEVEL` | `info` | `silent`, `error`, `warn`, `info`, `debug` |
 | `KANCHANFLOW_REFERENCE_DIR` | packaged `reference/` | Override the reference root |
 | `KANCHANFLOW_REPO` | `../KanchanFlow` | Website repo path — used by `npm run sync` only |
+
+## Usage logs
+
+Usage is answered from the JSON log lines on stderr; nothing else is stored.
+Three lines matter, and none carries an argument value, an IP address at info
+level, or a token:
+
+| Line | Fields |
+|---|---|
+| `http.request` | `method`, `path`, `status`, `durationMs`, `ua` — the caller's `User-Agent` reduced to its first product token (`name/version`, at most 64 characters of `[A-Za-z0-9._-]`), otherwise `unknown` |
+| `mcp.initialize` | `clientInfo.name` and `clientInfo.version` from the initialize request, sanitised the same way |
+| `tool.call` | `tool`, `client` (the same `ua` token, HTTP only), `argKeys` (names only), `outcome`, `errorCode`, `durationMs` |
+
+Tool × client × day, with `jq` over a log file:
+
+```bash
+jq -r 'select(.msg=="tool.call") | [.ts[0:10], .tool, (.client // "stdio")] | @tsv' server.log \
+  | sort | uniq -c | sort -rn
+```
 
 ## What it is not
 

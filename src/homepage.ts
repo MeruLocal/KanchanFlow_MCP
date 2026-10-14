@@ -465,12 +465,18 @@ export function renderHomepage(config: Config): string {
   const resourceCount = siteResources.length + refDocs.length;
   const authRequired = config.authToken !== null;
 
+  // The stdio snippet runs a local build. kanchanflow-mcp is not published to
+  // npm, so an `npx` snippet would fail today and would run whoever claims the
+  // name tomorrow. Release rule: the homepage snippet must name a published
+  // package (see README, "Releasing").
   const stdioConfig = JSON.stringify(
-    { mcpServers: { [SERVER_NAME]: { command: "npx", args: ["-y", "kanchanflow-mcp"] } } },
+    { mcpServers: { [SERVER_NAME]: { command: "node", args: ["/absolute/path/to/kanchanflow-mcp/dist/index.js"] } } },
     null,
     2
   );
-  const httpUrl = `http://localhost:${config.port}${config.path}`;
+  // Never derived from the Host header, and never "localhost": a hosted page
+  // would otherwise tell every visitor to connect to their own machine.
+  const httpUrl = config.publicUrl ? `${config.publicUrl}${config.path}` : config.path;
 
   const toc = groups
     .map(
@@ -571,13 +577,15 @@ export function renderHomepage(config: Config): string {
     <div class="cols">
       <div class="card">
         <h3>stdio &mdash; Claude Desktop</h3>
-        <p>Add this to <code>claude_desktop_config.json</code>. The host spawns the process and speaks MCP over stdin/stdout.</p>
+        <p>Build this repository, then add this to <code>claude_desktop_config.json</code> with the real path. The host spawns the process and speaks MCP over stdin/stdout.</p>
         <pre id="cfg-stdio">${esc(stdioConfig)}</pre>
         <button class="copy" type="button" data-copy="cfg-stdio">Copy</button>
       </div>
       <div class="card">
         <h3>Streamable HTTP</h3>
-        <p>This endpoint, running now. ${
+        <p>This endpoint, running now.${
+          config.publicUrl ? "" : " Use this server&rsquo;s own host in front of the path."
+        } ${
           authRequired
             ? "Send <code>Authorization: Bearer &lt;token&gt;</code> with every request."
             : "No token is configured, so the endpoint is open."

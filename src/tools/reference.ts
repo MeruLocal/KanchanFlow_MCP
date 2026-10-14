@@ -60,7 +60,7 @@ const getReferenceDocument: ToolDefinition<{ path: string; maxChars?: number }> 
     "Errors: NOT_FOUND with the available paths when the document does not exist.",
   ].join("\n"),
   inputSchema: {
-    path: z.string().min(1).describe("Document path relative to the reference root, e.g. 'mcp/tools.md'."),
+    path: z.string().min(1).max(512).describe("Document path relative to the reference root, e.g. 'mcp/tools.md'."),
     maxChars: z
       .number()
       .int()
@@ -82,7 +82,7 @@ const searchReference: ToolDefinition<{ query: string; limit?: number }> = {
     "Use it when you know the concept but not which document covers it.",
   ].join("\n"),
   inputSchema: {
-    query: z.string().min(2).describe("Search term, at least two characters."),
+    query: z.string().min(2).max(200).describe("Search term, 2 to 200 characters."),
     limit: z.number().int().min(1).max(100).optional().describe("Maximum matching lines. Default 20."),
   },
   handler: ({ query, limit }) => {

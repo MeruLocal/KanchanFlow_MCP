@@ -55,9 +55,15 @@ hostname or a filesystem path.
   logged server-side because it can contain a path, and is never returned.
 
 ### Request abuse
-The HTTP transport applies a fixed-window per-IP limit before authentication and
-before dispatch, refuses a body over 1 MB unread, and handles every request
-statelessly with a fresh server instance. The limiter sweeps expired buckets so a
+The HTTP transport binds loopback unless told otherwise, refuses a `Host` or
+browser `Origin` that is not on its allowlist (DNS rebinding), and applies a
+fixed-window per-client limit before authentication and before dispatch. The
+limiter keys on the socket address; only with `KANCHANFLOW_MCP_TRUST_PROXY=1`
+does it use the right-most `X-Forwarded-For` hop, so a caller cannot choose its
+own bucket. A body over 1 MB is `413` and invalid JSON is a `-32700` parse error,
+both before any server instance is built; every other request is handled
+statelessly with a fresh server instance. The bearer token is compared in
+constant time over SHA-256 digests, so its length does not leak. The limiter sweeps expired buckets so a
 long-lived process cannot accumulate one per address seen since boot.
 
 The limit is per process. A horizontally scaled deployment gets per-instance
