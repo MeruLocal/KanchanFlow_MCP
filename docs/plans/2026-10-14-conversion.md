@@ -1,6 +1,6 @@
 # Plan: surface the trial CTA, add `kanchanflow_get_started`, tag own-site URLs with UTM
 
-- **Severity:** P2 (growth, not a defect)
+- **Severity:** P1 (lost conversion; the audit skill rates V1 UTM and V2 conversion tool as P1. Was P2.)
 - **Effort:** S
 - **Status:** plan only. Implementation follows after approval.
 
@@ -11,6 +11,8 @@
    - An agent asked "how do I try it" has no URL to give.
 2. **No next-step tool.** There is no single tool an agent can call for the next step: trial, demo, contact or pricing.
 3. **No UTM attribution.** Own-site URLs carry no UTM, so traffic from AI agents cannot be told apart in analytics. Absolute URLs are built in src/tools/{pricing,content,features,integrations,partners}.ts. Relative `url` fields appear in list and search results.
+
+**Re-audit (2026-10-14 13:18 UTC, new skill and script, local :3937, path `/mcp`):** 3 fail · 6 warn · 26 pass. Measured for this plan: `WARN X.conversion_tool no demo / trial / get_started / contact tool` and `WARN X.utm 0/2 URLs in kanchanflow_get_pricing output carry UTM tags`.
 
 **Not checked:** that `/signup` and `/demo` resolve on the live site (the sandbox cannot reach it). Both are in the mirror's own route map.
 
@@ -56,6 +58,8 @@
 - The protocol test's tool count rises by 1.
 
 ## Risks and rollout
+
+- **Relative URLs stay untagged.** List and search results return relative \`url\` values (\`/features/<slug>\`). An agent that turns one into a link sends untagged traffic. Option for review: add a tagged \`absoluteUrl\` next to each relative \`url\` (costs payload size), or accept the gap. The script only checks absolute URLs, so it will not show this.
 
 - **Tagged links become the canonical form agents repeat.** Harmless, but analytics should treat `utm_medium=ai_agent` as a channel.
 - **Changed output strings.** Snapshot-style assertions on `url` values may need updating.
