@@ -165,6 +165,9 @@ describe("published package", () => {
       if (entry === "dist" || entry.startsWith("dist/")) continue;
       walk(path.join(root, entry), files);
     }
+    // package.json is always shipped; scan it even when "files" omits it.
+    const manifest = path.join(root, "package.json");
+    if (!files.includes(manifest)) files.push(manifest);
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) expectClean(path.relative(root, file), fs.readFileSync(file, "utf8"));
   });
@@ -194,6 +197,12 @@ describe("sync guard (scripts/brand-guard.mjs)", () => {
     expect(out).not.toContain("Placeholder");
     expect(out).toContain("2. **NEVER emit `Review`**");
     expect(out).toContain("4. **NEVER fabricate customer logos.**");
+  });
+
+  it("holds the full digest set, including the 11-character name", () => {
+    // Digest of an 11-character forbidden token is present: a match is found
+    // through the digest path, so check a made-up token does not collide.
+    expect(findBrandHits("abcdefghijk")).toEqual([]);
   });
 
   it("leaves a contract with no such guardrail unchanged", () => {

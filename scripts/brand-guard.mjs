@@ -36,6 +36,7 @@ const FORBIDDEN_TOKEN_DIGESTS = new Set([
   "c57581984fd65479415aa89c7769c58d78098ab9e4f23c85c17716a7b02c8325",
   "f14e43c1f07c5173e457d3b68a0fd5ac1b187da0922fa55098873e94fabb9c85",
   "0c10e0c1c9def3fff447b82f2e428b76e49b8604ad73ba05381e08e51ed8b830",
+  "808f42d855f263da10ae0cf46cbe17429d681cccaefae90859400516d05c9c7b",
 ]);
 
 /** Lengths of the forbidden names that are also searched for inside tokens. */
