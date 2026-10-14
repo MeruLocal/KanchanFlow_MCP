@@ -13,7 +13,7 @@ export async function connect(ctx: RequestContext = {}): Promise<Client> {
 }
 
 /** The JSON payload in a tool result's first text block. */
-export function textPayload(result: { content?: unknown }): any {
-  const first = (result.content as { type: string; text: string }[])[0];
+export function textPayload(result: unknown): any {
+  const first = ((result as { content?: { type: string; text: string }[] }).content ?? [])[0];
   return JSON.parse(first?.text ?? "null");
 }
