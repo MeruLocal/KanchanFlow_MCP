@@ -10,11 +10,12 @@
 2. **No registry manifest.** There is no `server.json`, so the server cannot be listed in the MCP Registry, and nothing advertises the remote endpoint.
 3. **Version is hard-coded.** `SERVER_VERSION` is `"1.0.0"` in src/server-info.ts:12. It is used in the initialize handshake, `/health` and the homepage, and package.json carries its own copy. The two will drift on the first release.
 
-**Audit baseline** (local :3010, path `/mcp`): 3 fail · 3 warn · 11 pass.
-- Two of the FAILs, `GET /version` and `/.well-known/mcp.json`, are checks written for another server and are not part of this server's contract. Adding them is optional and out of scope here.
+**Audit baseline.** Earlier script: 3 fail · 3 warn · 11 pass. **Re-audit (2026-10-14 13:18 UTC, new skill and script, local :3937, path `/mcp`):** 3 fail · 6 warn · 26 pass.
+- ~~Two of the FAILs, `GET /version` and `/.well-known/mcp.json`, are checks written for another server and are out of scope.~~ Corrected: with the updated skill, a missing `/version` is INFO only, but `/.well-known/mcp.json` is a P1 FAIL (`C13.well_known`, skill D2). It now has its own plan (`claude/mcp-well-known`), which also adds the public-URL setting that `server.json` `remotes` should share.
+- npm, measured: `registry.npmjs.org/kanchanflow-mcp` returns 404 (skill D5). See the npx-name plan.
 
 **Not checked:**
-- whether `mcp.kanchanflow.com` resolves or is deployed
+- whether `mcp.kanchanflow.com` resolves or is deployed (no egress from the sandbox)
 - registry namespace ownership
 
 ## Proposed fix
