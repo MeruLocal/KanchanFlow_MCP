@@ -92,8 +92,10 @@ describe("tools", () => {
     const docs = referenceLoader().list();
     expect(docs.length).toBeGreaterThan(0);
     for (const doc of docs) {
-      const text = await callText("kanchanflow_get_reference_document", { path: doc.path, maxChars: 200_000 });
-      expect(text, doc.path).not.toContain('\\"truncated\\": true');
+      // Every reference document fits in one default-sized read; the
+      // truncation check proves the whole body was scanned.
+      const text = await callText("kanchanflow_get_reference_document", { path: doc.path });
+      expect(text, doc.path).toContain('\\"truncated\\": false');
       expectClean(`reference ${doc.path}`, text);
     }
   });
