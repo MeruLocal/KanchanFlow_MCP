@@ -13,7 +13,7 @@
 
 **Measured.** In a local prototype, the server answered `Host: evil.example` normally on main. With the fix it returned 403.
 
-**Audit baseline** (local :3010, path `/mcp`): 3 fail · 3 warn · 11 pass. The script does not probe Host or Origin.
+**Audit baseline.** Earlier script: 3 fail · 3 warn · 11 pass. **Re-audit (2026-10-14 13:18 UTC, new skill and script, local :3937, path `/mcp`):** 3 fail · 6 warn · 26 pass. The new script now measures this finding directly: two of the three FAILs are `X.rebinding`: `Origin: http://evil.example accepted (HTTP 200)` and `Host: evil.example accepted (HTTP 200)`. It also reports `INFO C16.cors OPTIONS /mcp → 405`. After this plan both FAILs should PASS and OPTIONS should return 204 for an allowed origin.
 
 **Not checked:** browser behaviour against the production domain, or Cloudflare header rewriting.
 
