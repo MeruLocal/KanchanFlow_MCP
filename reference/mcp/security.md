@@ -18,7 +18,7 @@ lists what does not apply is not doing its job.
 
 | Risk | Why it does not apply |
 |---|---|
-| Privilege escalation | No privilege levels. Every caller gets the same 24 read-only tools. |
+| Privilege escalation | No privilege levels. Every caller gets the same read-only tools. |
 | Cross-workspace access | No workspaces. Nothing here belongs to one customer rather than another. |
 | IDOR | No object is owned by anyone. Every id addresses public published content. |
 | Destructive operations | No create, update, delete, publish or execute tool exists. |

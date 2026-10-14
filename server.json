@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.kanchanflow/mcp",
+  "title": "KanchanFlow",
+  "description": "Read-only facts about KanchanFlow, the RFQ-to-Order manufacturing CRM by Soor LLC.",
+  "websiteUrl": "https://kanchanflow.com",
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "kanchanflow-mcp",
+      "version": "1.0.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "KANCHANFLOW_MCP_LOG_LEVEL",
+          "description": "silent | error | warn | info | debug. Default info.",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "KANCHANFLOW_REFERENCE_DIR",
+          "description": "Override the packaged reference/ folder.",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.kanchanflow.com/mcp"
+    }
+  ]
+}
