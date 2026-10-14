@@ -7,27 +7,10 @@
  * change anything.
  */
 
-import fs from "node:fs";
-
-import { packagePath } from "./utils/package-paths.js";
-
-/**
- * The version comes from package.json, the single source. server.json is held
- * to it by scripts/check-versions.mjs. "0.0.0" means package.json could not be
- * read, which only happens in a broken install.
- */
-function packageVersion(): string {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(packagePath("package.json"), "utf8")) as { version?: unknown };
-    return typeof pkg.version === "string" && pkg.version ? pkg.version : "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
-}
-
 export const SERVER_NAME = "kanchanflow";
 export const SERVER_TITLE = "KanchanFlow";
-export const SERVER_VERSION = packageVersion();
+/** From package.json (src/utils/package-version.ts), so the two cannot drift. */
+export { PACKAGE_VERSION as SERVER_VERSION } from "./utils/package-version.js";
 export const SERVER_DESCRIPTION =
   "Read-only access to what KanchanFlow — the RFQ-to-Order manufacturing CRM by Soor LLC — publishes: the feature catalog with truthful status, pricing and the feature-gate matrix, the connector catalog, the glossary, the changelog and roadmap, and the project's reference documentation. It holds no customer data and cannot create, change or delete anything.";
 
