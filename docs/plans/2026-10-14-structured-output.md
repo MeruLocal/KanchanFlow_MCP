@@ -1,13 +1,13 @@
 # Plan: `outputSchema` + `structuredContent` on the core tools
 
-- **Severity:** P2
+- **Severity:** P1 (the audit skill rates A1 outputSchema + structuredContent as P1. Was P2.)
 - **Effort:** M
 - **Status:** plan only. Implementation follows after approval.
 
 ## Finding
 
 1. **No tool declares an `outputSchema`.** Every result is a single `text` block of pretty-printed JSON (src/server.ts:85 and :100). Clients have to re-parse the text, and none can validate the shape.
-   - **Measured:** `audit-live-mcp.mjs` (local :3010, path `/mcp`) reports `WARN tools no tool sets outputSchema`. The full baseline is 3 fail · 3 warn · 11 pass.
+   - **Measured:** `audit-live-mcp.mjs` (local :3010, path `/mcp`) reports `WARN tools no tool sets outputSchema`. The earlier baseline was 3 fail · 3 warn · 11 pass. **Re-audit (2026-10-14 13:18 UTC, new skill and script, local :3937, path `/mcp`):** 3 fail · 6 warn · 26 pass. The same `WARN C2.output_schema` is reported.
 2. **Tool types have no output field.** `ToolDefinition` (src/tools/tool-types.ts) has no output field, and the registry ignores outputs.
 
 ## Proposed fix
@@ -32,7 +32,7 @@
   - `tools/list` shows an `outputSchema` of type object for the 4 tools
   - calling each one returns `structuredContent` that deep-equals `JSON.parse(content[0].text)`
 - Error-path test: `kanchanflow_compare_tiers` with an unknown group returns `isError` with no `structuredContent`, and does not raise an SDK validation error.
-- Re-run the audit script: the `outputSchema` WARN should become a PASS (2 warn).
+- Re-run the audit script: `C2.output_schema` should become a PASS (6 warn → 5 warn on the new script).
 
 ## Risks
 
