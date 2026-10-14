@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 import { loadMirror } from "../data/mirror.js";
-import { referenceLoader } from "../reference/index.js";
+import { MAX_SLICE_CHARS, referenceLoader } from "../reference/index.js";
 import { SERVER_INSTRUCTIONS } from "../server-info.js";
 import { finalizePayload, MAX_RESPONSE_CHARS } from "../tools/finalize.js";
 import { allTools, type ToolDefinition } from "../tools/index.js";
@@ -68,6 +68,27 @@ describe("size", () => {
     expect(out.note).toContain("limit, offset");
     expect(out.data.source.syncedAt).toBe("2026-01-01T00:00:00Z");
     expect(JSON.stringify(out).length).toBeLessThan(2_000);
+  });
+});
+
+describe("reference maxChars ceiling", () => {
+  it("maxChars = MAX_SLICE_CHARS on the largest document is not capped by the response limit", async () => {
+    const doc = [...referenceLoader().list()].sort((a, b) => b.bytes - a.bytes)[0]!;
+    const result = await client.callTool({
+      name: "kanchanflow_get_reference_document",
+      arguments: { path: doc.path, maxChars: MAX_SLICE_CHARS },
+    });
+    const text = (result.content as { text: string }[])[0]!.text;
+    expect(result.isError).toBeFalsy();
+    const payload = JSON.parse(text);
+    const full = referenceLoader().read(doc.path, 1_000_000).content;
+    expect(full.length).toBeGreaterThan(MAX_SLICE_CHARS);
+    expect(MAX_SLICE_CHARS).toBeLessThan(MAX_RESPONSE_CHARS);
+    // The tool's own slice is as long as asked: finalize did not replace it.
+    expect(payload.success).toBe(true);
+    expect(payload.note ?? "").not.toMatch(/narrow/i);
+    expect(text).toContain("nextOffset");
+    expect(text.length).toBeLessThan(MAX_RESPONSE_CHARS);
   });
 });
 

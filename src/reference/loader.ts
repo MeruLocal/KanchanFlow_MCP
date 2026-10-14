@@ -40,7 +40,7 @@ const MAX_FILE_BYTES = 512 * 1024;
 export const DEFAULT_MAX_CHARS = 20_000;
 
 /** Largest slice a caller may ask for. */
-export const MAX_SLICE_CHARS = 24_000;
+export const MAX_SLICE_CHARS = 22_000;
 
 export class ReferenceLoader {
   private readonly root: string;

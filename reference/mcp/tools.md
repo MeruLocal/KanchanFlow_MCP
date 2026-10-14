@@ -157,7 +157,7 @@ publishes nothing on that term. Pages with `offset`; returns `hasMore` and
 ### `kanchanflow_search_reference` — `query`, `limit?`, `offset?`
 
 Read this folder. A document longer than `maxChars` (default 20,000, at most
-24,000) comes back with `truncated: true` and `nextOffset`; read the rest with
+22,000) comes back with `truncated: true` and `nextOffset`; read the rest with
 `offset`. The search pages the same way with `hasMore` and `nextOffset`. Paths are confined to the reference root: an absolute path or
 a `..` segment is a `VALIDATION_ERROR`, not a read.
 

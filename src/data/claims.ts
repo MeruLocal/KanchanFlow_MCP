@@ -31,7 +31,7 @@ export const NEVER_GATED: readonly string[] = [
  */
 export const CONTENT_GUARDRAILS: readonly string[] = [
   "Never fabricate a customer name, logo, testimonial, count or case study. There are none.",
-  "Never claim a certification without an audit. Check the compliance list for the verified flag.",
+  "Never claim a certification without an audit. Quote compliance.basis from the company tool for what is verified.",
   "Feature status must be truthful: live means production today; building carries a visible target; planned promises nothing.",
   "Never cap RFQ line items or quote revision history in pricing copy.",
   "Never gate the India GST, e-Invoice IRN or 43B(h) features behind a plan.",
