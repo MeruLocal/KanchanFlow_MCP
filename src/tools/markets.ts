@@ -9,18 +9,28 @@
 
 import { z } from "zod";
 
+import { basisFor, contractedCurrencies, joinList, marketCodes } from "../data/claims.js";
 import { loadMirror } from "../data/mirror.js";
 import { ok, validationError } from "../errors.js";
 import { amountFor, formatAmount } from "./pricing.js";
 import type { ToolDefinition } from "./tool-types.js";
 
+const M = loadMirror();
+const MARKETS = marketCodes(M.markets);
+const CONTRACTED = contractedCurrencies(M.markets);
+const INDICATIVE = M.markets.countries.filter((c) => !c.locked).map((c) => c.currency);
+const BILLED_IN_FOR_INDICATIVE = joinList(
+  [...new Set(M.markets.countries.filter((c) => !c.locked).map((c) => c.billedIn))],
+  "or"
+);
+
 const listMarkets: ToolDefinition = {
   name: "kanchanflow_list_markets",
   title: "List KanchanFlow display markets",
   description: [
-    "Returns the seven markets the KanchanFlow pricing page can display, each with its currency, symbol, the fixed reference rate used for conversion, whether the price is contracted in that currency, and what the customer is actually billed in.",
+    `Returns the ${MARKETS.length} markets the KanchanFlow pricing page can display, each with its currency, symbol, the fixed reference rate used for conversion, whether the price is contracted in that currency, and what the customer is actually billed in.`,
     "",
-    "USD and INR are contracted prices. GBP, AUD, AED, SGD and NZD are indicative conversions at a fixed dated reference rate and are billed in USD.",
+    `${joinList(CONTRACTED, "and")} are contracted prices. ${joinList(INDICATIVE, "and")} are indicative conversions at a fixed dated reference rate and are billed in ${BILLED_IN_FOR_INDICATIVE}.`,
     "",
     "This is a display currency list, not a list of localised sites. KanchanFlow Wave 1 is a single USA-market .com root: there are no country subdirectories, no per-country canonicals and no non-en-US hreflang alternates.",
   ].join("\n"),
@@ -50,7 +60,7 @@ const convertPrice: ToolDefinition<{
   name: "kanchanflow_convert_price",
   title: "Convert a KanchanFlow price to a display market",
   description: [
-    "Converts a USD amount, or a named KanchanFlow plan, into one of the seven display-market currencies using the site's own fixed reference rate and rounding rule — the same arithmetic the pricing page performs, so the figure matches what a visitor sees.",
+    `Converts a USD amount, or a named KanchanFlow plan, into one of the ${MARKETS.length} display-market currencies using the site's own fixed reference rate and rounding rule — the same arithmetic the pricing page performs, so the figure matches what a visitor sees.`,
     "",
     "Give either `amountUsd`, or `tierId` with an optional `billing` ('monthly' or 'annual', default monthly) and an optional `users` count for a plan subtotal including any platform fee.",
     "",
@@ -61,7 +71,7 @@ const convertPrice: ToolDefinition<{
     countryCode: z
       .string()
       .length(2)
-      .describe("Two-letter display market: US, IN, GB, AU, AE, SG or NZ."),
+      .describe(`Two-letter display market: ${joinList(MARKETS, "or")}.`),
     amountUsd: z.number().min(0).optional().describe("A USD amount to convert."),
     tierId: z
       .enum(["starter", "professional", "enterprise"])
@@ -79,12 +89,7 @@ const convertPrice: ToolDefinition<{
       });
     }
 
-    const basis =
-      country.code === "US"
-        ? "USD is the contract currency."
-        : country.code === "IN"
-          ? "India pricing is contracted in INR."
-          : `${country.currency} is indicative, converted from USD at a fixed reference rate set ${m.markets.ratesAsOf}. Contracts and invoices are in USD.`;
+    const basis = basisFor(country, m.markets);
 
     if (amountUsd !== undefined) {
       const converted = amountFor(country, amountUsd);

@@ -173,7 +173,7 @@ describe("configuration", () => {
     const config = loadConfig({});
     expect(config.transport).toBe("stdio");
     expect(config.authToken).toBeNull();
-    expect(config.rateLimitPerMinute).toBe(120);
+    expect(config.rateLimitPerMinute).toBe(60);
     expect(config.path).toBe("/mcp");
   });
 

@@ -16,6 +16,12 @@ export interface ReferenceDocument {
 
 export interface ReferenceDocumentContent extends ReferenceDocument {
   content: string;
-  /** True when `content` was cut to the requested maximum length. */
+  /** True when the document continues past this slice. */
   truncated: boolean;
+  /** Character offset this slice starts at. */
+  offset: number;
+  /** Where the next slice starts, when truncated. */
+  nextOffset?: number;
+  /** How to read the rest, when truncated. */
+  note?: string;
 }

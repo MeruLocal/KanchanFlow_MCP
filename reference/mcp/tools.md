@@ -18,7 +18,19 @@ No parameters. Positioning, the Soor LLC entity facts, the compliance list split
 into verified and not-verified with the reason, trust badges, social profiles,
 market policy and keyword architecture.
 
-Read the `notVerified` list before repeating a compliance claim.
+Read the `notVerified` list before repeating a compliance claim. The `verified`
+list is what the company states on its website, not proof of an audit:
+`compliance.basis` says so, `compliance.evidence` carries an evidence note when
+the website publishes one, and `compliance.evidencePending` lists certification
+entries that have none yet.
+
+## Get started
+
+### `kanchanflow_get_started`
+No parameters. Where to send someone who wants to try, see or buy KanchanFlow:
+the free-trial signup link with the trial terms, the demo, contact and pricing
+pages. Every link is a real route from the mirror's route map; a missing route is
+dropped rather than invented.
 
 ## Features
 
@@ -44,8 +56,9 @@ carries close slugs.
 
 Three plans with per-user monthly and annual prices, seat minimums and caps,
 platform fee, who each is for, highlights, the annual discount, trial terms and
-the ceiling policy — plus the three things never gated on any plan. A converted
-currency comes with the `basis` sentence explaining that it is indicative.
+the ceiling policy — plus what is never gated on any plan, and `cta` with the
+free-trial and demo links. A converted currency comes with the `basis` sentence
+explaining that it is indicative. Declares an `outputSchema`.
 
 ### `kanchanflow_compare_tiers`
 `group?`, `capability?`
@@ -115,7 +128,8 @@ Items under consideration carry no date of any kind — do not attach one.
 ### `kanchanflow_get_partner_program` — `section?`
 Partner types, tiers and commission rates, guardrails, certification tracks,
 portal capabilities, the review commitment and the FAQs. Reports that the public
-directory has no listings yet.
+directory has no listings yet. Without `section`, certification tracks are
+summarised; `section: 'certificationTracks'` returns them in full.
 
 ## Website
 
@@ -129,24 +143,37 @@ types it forbids outright, the hreflang policy and the content guardrails.
 
 ## Discovery
 
-### `kanchanflow_search` — `query`, `types?`, `limit?`
+### `kanchanflow_search` — `query`, `types?`, `limit?`, `offset?`
 Searches features, integrations, glossary, blog, changelog and routes at once.
 Ranked, with a snippet and the `followUpTool` to call for the full record. Start
 here when the right collection is not obvious. An empty result means the product
-publishes nothing on that term.
+publishes nothing on that term. Pages with `offset`; returns `hasMore` and
+`nextOffset`. Declares an `outputSchema`.
 
 ## Reference
 
 ### `kanchanflow_list_reference_documents` — `section?`
-### `kanchanflow_get_reference_document` — `path`, `maxChars?`
-### `kanchanflow_search_reference` — `query`, `limit?`
+### `kanchanflow_get_reference_document` — `path`, `maxChars?`, `offset?`
+### `kanchanflow_search_reference` — `query`, `limit?`, `offset?`
 
-Read this folder. Paths are confined to the reference root: an absolute path or
+Read this folder. A document longer than `maxChars` (default 20,000, at most
+22,000) comes back with `truncated: true` and `nextOffset`; read the rest with
+`offset`. The search pages the same way with `hasMore` and `nextOffset`. Paths are confined to the reference root: an absolute path or
 a `..` segment is a `VALIDATION_ERROR`, not a read.
 
 ## Conventions across all tools
 
-- Every success carries `source.syncedAt`, so a client can judge freshness.
+- Every success carries `source.syncedAt`, plus `source.ageDays` and
+  `source.stale` (older than 14 days, or `KANCHANFLOW_MCP_STALE_AFTER_DAYS`).
+  When stale, `source.note` says to confirm prices and status on the website.
+- Every absolute kanchanflow.com URL carries
+  `utm_source=mcp&utm_medium=ai_agent&utm_campaign=<tool name>`. Relative paths
+  (`/features/<slug>`) and other hosts are left as they are.
+- No response is over 24,000 characters. A larger one is replaced with
+  `truncated: true` and a note naming the arguments that narrow it.
+- `kanchanflow_get_pricing`, `kanchanflow_compare_tiers`,
+  `kanchanflow_list_features` and `kanchanflow_search` declare an `outputSchema`
+  and return the same payload as `structuredContent` alongside the text.
 - List tools take `limit` and `offset` and return `total`, `limit`, `offset` and
   `hasMore`.
 - A slug miss returns `NOT_FOUND` with `details.didYouMean`.

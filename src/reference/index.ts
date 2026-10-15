@@ -9,7 +9,7 @@ import { loadConfig } from "../config.js";
 import { ReferenceLoader } from "./loader.js";
 
 export * from "./types.js";
-export { ReferenceLoader, DEFAULT_MAX_CHARS } from "./loader.js";
+export { ReferenceLoader, DEFAULT_MAX_CHARS, MAX_SLICE_CHARS } from "./loader.js";
 
 let instance: ReferenceLoader | null = null;
 

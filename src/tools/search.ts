@@ -12,6 +12,7 @@ import { z } from "zod";
 import { loadMirror } from "../data/mirror.js";
 import { ok, validationError } from "../errors.js";
 import type { ToolDefinition } from "./tool-types.js";
+import { searchOutput } from "./output-schemas.js";
 
 const TYPES = ["feature", "integration", "glossary", "blog", "changelog", "page"] as const;
 type ResultType = (typeof TYPES)[number];
@@ -41,7 +42,7 @@ function snippet(text: string | undefined, needle: string, width = 180): string 
   return `${start > 0 ? "…" : ""}${body.slice(start, start + width)}${start + width < body.length ? "…" : ""}`;
 }
 
-const search: ToolDefinition<{ query: string; types?: ResultType[]; limit?: number }> = {
+const search: ToolDefinition<{ query: string; types?: ResultType[]; limit?: number; offset?: number }> = {
   name: "kanchanflow_search",
   title: "Search everything KanchanFlow publishes",
   description: [
@@ -49,15 +50,17 @@ const search: ToolDefinition<{ query: string; types?: ResultType[]; limit?: numb
     "",
     "Use this first when you do not know which collection holds the answer, or when a user's wording does not map cleanly onto a slug. Each result names the tool to call for the full record, so this is the discovery step rather than the answer.",
     "",
-    "Required: `query`, at least two characters. Optional `types` narrows the collections searched; `limit` defaults to 20 and caps at 50.",
+    "Required: `query`, at least two characters. Optional `types` narrows the collections searched; `limit` defaults to 20 and caps at 50. When `hasMore` is true, call again with `offset` set to `nextOffset` for the next page.",
     "An empty result set means KanchanFlow publishes nothing on that term. Say that rather than filling the gap.",
   ].join("\n"),
   inputSchema: {
-    query: z.string().min(2).describe("Search term, at least two characters."),
+    query: z.string().min(2).max(200).describe("Search term, 2 to 200 characters."),
     types: z.array(z.enum(TYPES)).optional().describe("Collections to search. Default: all."),
     limit: z.number().int().min(1).max(50).optional().describe("Maximum results. Default 20."),
+    offset: z.number().int().min(0).optional().describe("Results to skip; use the previous nextOffset. Default 0."),
   },
-  handler: ({ query, types, limit }) => {
+  outputSchema: searchOutput,
+  handler: ({ query, types, limit, offset }) => {
     const needle = query.trim().toLowerCase();
     if (needle.length < 2) {
       throw validationError("Search needs a query of at least two characters.");
@@ -177,12 +180,17 @@ const search: ToolDefinition<{ query: string; types?: ResultType[]; limit?: numb
     }
 
     hits.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
-    const capped = hits.slice(0, Math.min(limit ?? 20, 50));
+    const start = Math.max(0, Math.trunc(offset ?? 0));
+    const capped = hits.slice(start, start + Math.min(limit ?? 20, 50));
+    const hasMore = start + capped.length < hits.length;
 
     return ok({
       query,
       total: hits.length,
       returned: capped.length,
+      offset: start,
+      hasMore,
+      ...(hasMore ? { nextOffset: start + capped.length } : {}),
       typesSearched: [...want],
       results: capped,
       ...(hits.length === 0

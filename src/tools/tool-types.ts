@@ -24,6 +24,12 @@ export interface ToolDefinition<Args = Record<string, unknown>> {
   description: string;
   /** Zod raw shape. The SDK converts this to the advertised JSON Schema. */
   inputSchema: ZodRawShape;
+  /**
+   * Optional Zod raw shape of the success payload ({ success, data }). When
+   * set, the registry also returns the payload as structuredContent and the
+   * SDK validates it.
+   */
+  outputSchema?: ZodRawShape;
   handler: (args: Args) => unknown;
 }
 

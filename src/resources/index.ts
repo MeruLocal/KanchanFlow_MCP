@@ -14,7 +14,9 @@
  * traversal-guarded loader the tools use.
  */
 
+import { freshness } from "../data/freshness.js";
 import { loadMirror } from "../data/mirror.js";
+import { complianceView } from "../tools/company.js";
 import { referenceLoader } from "../reference/index.js";
 import type { SiteMirror } from "../data/types.js";
 
@@ -48,6 +50,7 @@ export const siteResources: SiteResource[] = [
       },
       entity: m.brand.entity,
       compliance: m.brand.compliance,
+      complianceBasis: complianceView(m.brand.compliance).basis,
       trustBadges: m.brand.trustBadges,
       social: m.brand.social,
     }),
@@ -162,7 +165,13 @@ export function readSiteResource(uri: string): { uri: string; mimeType: string; 
     uri,
     mimeType: resource.mimeType,
     text: JSON.stringify(
-      { source: { syncedAt: mirror.meta.syncedAt, siteUrl: mirror.meta.siteUrl }, data: resource.read(mirror) },
+      {
+        source: {
+          ...freshness(mirror.meta.syncedAt, Date.now(), undefined, mirror.brand.url),
+          siteUrl: mirror.meta.siteUrl,
+        },
+        data: resource.read(mirror),
+      },
       null,
       2
     ),

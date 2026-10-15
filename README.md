@@ -46,6 +46,7 @@ npm run dev          # http://localhost:3010 — homepage + MCP endpoint
 | `/` | Homepage: every tool, resource and prompt, with a console to run one |
 | `/mcp` | The Streamable HTTP MCP endpoint |
 | `/health` | Liveness probe, no token needed |
+| `/.well-known/mcp.json` | Discovery document: name, version, endpoint, transport, auth. No tool list |
 
 The homepage is generated from the same registries the protocol advertises, so
 it cannot drift from what the server actually exposes. `/mcp` is JSON-RPC and
@@ -63,6 +64,7 @@ looks like a failure even when the server is healthy.
 | Area | Tools |
 |---|---|
 | Company, positioning, compliance | `kanchanflow_get_company_profile` |
+| Next step: trial, demo, contact, pricing | `kanchanflow_get_started` |
 | Feature catalog with truthful status | `kanchanflow_list_features` · `kanchanflow_get_feature` |
 | Pricing, plan gates, add-ons, AI credits | `kanchanflow_get_pricing` · `kanchanflow_compare_tiers` · `kanchanflow_get_addons` · `kanchanflow_get_ai_credits` |
 | Connectors, setup, limitations | `kanchanflow_list_integrations` · `kanchanflow_get_integration` |
@@ -148,7 +150,13 @@ stdio server, which is the normal desktop setup. See [`.env.example`](.env.examp
 | `KANCHANFLOW_MCP_PORT` | `3010` | HTTP listen port |
 | `KANCHANFLOW_MCP_PATH` | `/mcp` | HTTP endpoint path |
 | `KANCHANFLOW_MCP_AUTH_TOKEN` | unset | Bearer token for a private HTTP instance |
-| `KANCHANFLOW_MCP_RATE_LIMIT` | `120` | Requests per IP per minute; `0` disables |
+| `KANCHANFLOW_MCP_RATE_LIMIT` | `60` | Requests per client per minute; `0` disables |
+| `KANCHANFLOW_MCP_TRUST_PROXY` (or `TRUST_PROXY`) | `0` | Number of trusted proxy hops. `0` keys the limiter on the socket address; `N` keys on the `N`th-from-right `X-Forwarded-For` entry (short header falls back to the socket). `true`/`yes`/`1` mean `1`; unparsable means `0`. `CF-Connecting-IP` is never read |
+| `KANCHANFLOW_MCP_HOST` (or `HOST`) | `127.0.0.1` | HTTP bind address. Keep loopback when the reverse proxy runs on the same host; use `0.0.0.0` only inside containers |
+| `KANCHANFLOW_MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1],mcp.kanchanflow.com` | Host names (port ignored) the MCP endpoint answers; `*` disables the check |
+| `KANCHANFLOW_MCP_ALLOWED_ORIGINS` | `https://mcp.kanchanflow.com,https://kanchanflow.com,https://www.kanchanflow.com,http://localhost:*,http://127.0.0.1:*` | Browser origins allowed on the MCP endpoint (`:*` = any port); `*` allows any |
+| `KANCHANFLOW_MCP_PUBLIC_URL` | unset | Public origin, e.g. `https://mcp.kanchanflow.com`. Used for `/.well-known/mcp.json` and the homepage; never derived from `Host` |
+| `KANCHANFLOW_MCP_STALE_AFTER_DAYS` | `14` | Mirror age (days) after which responses carry `source.stale: true` and a note |
 | `KANCHANFLOW_MCP_LOG_LEVEL` | `info` | `silent` · `error` · `warn` · `info` · `debug` |
 | `KANCHANFLOW_REFERENCE_DIR` | packaged `reference/` | Override the reference root |
 | `KANCHANFLOW_REPO` | `../KanchanFlow` | Website repo path — used by `npm run sync` only |
@@ -230,7 +238,16 @@ field in `package.json` already scopes a publish to those.
 
 **HTTP** — set `KANCHANFLOW_MCP_TRANSPORT=http` and a port, put it behind TLS,
 and set `KANCHANFLOW_MCP_AUTH_TOKEN` if the instance should be private. `/health`
-answers without a token for orchestrators. The rate limiter is per process, so a
+answers without a token for orchestrators. The server binds `127.0.0.1` unless
+`HOST`/`KANCHANFLOW_MCP_HOST` says otherwise, answers only the Host names in
+`KANCHANFLOW_MCP_ALLOWED_HOSTS`, and refuses browser Origins not on
+`KANCHANFLOW_MCP_ALLOWED_ORIGINS`. Behind a reverse proxy, set
+`KANCHANFLOW_MCP_TRUST_PROXY` to the number of proxies in front: `2` behind
+Cloudflare then Apache, or configure Apache `mod_remoteip` with Cloudflare's
+ranges and use `1`. Each proxy must append to `X-Forwarded-For`. Left at `0`,
+every visitor shares the proxy's rate-limit bucket. Set
+`KANCHANFLOW_MCP_PUBLIC_URL` so `/.well-known/mcp.json` and the homepage name
+the public endpoint. The rate limiter is per process, so a
 horizontally scaled deployment needs a shared limiter at the edge if you want a
 global limit.
 
@@ -252,6 +269,13 @@ kanchanflow-mcp/
     ├── utils/    logger.ts  rate-limiter.ts  package-paths.ts
     └── __tests__/
 ```
+
+## Releasing
+
+The homepage's stdio snippet must name a package that is actually published.
+Today it shows the local `node …/dist/index.js` form because `kanchanflow-mcp`
+is not on npm. Switch it to `npx` only in the same change that follows a
+publish, and check `npm view kanchanflow-mcp version` equals `package.json`.
 
 ## Licence
 
