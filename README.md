@@ -64,6 +64,7 @@ looks like a failure even when the server is healthy.
 | Area | Tools |
 |---|---|
 | Company, positioning, compliance | `kanchanflow_get_company_profile` |
+| Next step: trial, demo, contact, pricing | `kanchanflow_get_started` |
 | Feature catalog with truthful status | `kanchanflow_list_features` · `kanchanflow_get_feature` |
 | Pricing, plan gates, add-ons, AI credits | `kanchanflow_get_pricing` · `kanchanflow_compare_tiers` · `kanchanflow_get_addons` · `kanchanflow_get_ai_credits` |
 | Connectors, setup, limitations | `kanchanflow_list_integrations` · `kanchanflow_get_integration` |
@@ -155,6 +156,7 @@ stdio server, which is the normal desktop setup. See [`.env.example`](.env.examp
 | `KANCHANFLOW_MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1],mcp.kanchanflow.com` | Host names (port ignored) the MCP endpoint answers; `*` disables the check |
 | `KANCHANFLOW_MCP_ALLOWED_ORIGINS` | `https://mcp.kanchanflow.com,https://kanchanflow.com,https://www.kanchanflow.com,http://localhost:*,http://127.0.0.1:*` | Browser origins allowed on the MCP endpoint (`:*` = any port); `*` allows any |
 | `KANCHANFLOW_MCP_PUBLIC_URL` | unset | Public origin, e.g. `https://mcp.kanchanflow.com`. Used for `/.well-known/mcp.json` and the homepage; never derived from `Host` |
+| `KANCHANFLOW_MCP_STALE_AFTER_DAYS` | `14` | Mirror age (days) after which responses carry `source.stale: true` and a note |
 | `KANCHANFLOW_MCP_LOG_LEVEL` | `info` | `silent` · `error` · `warn` · `info` · `debug` |
 | `KANCHANFLOW_REFERENCE_DIR` | packaged `reference/` | Override the reference root |
 | `KANCHANFLOW_REPO` | `../KanchanFlow` | Website repo path — used by `npm run sync` only |

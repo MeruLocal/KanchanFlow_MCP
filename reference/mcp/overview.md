@@ -36,6 +36,7 @@ empty rather than invented.
 | Partner program | `kanchanflow_get_partner_program` |
 | Website structure and the SEO contract | `kanchanflow_list_pages`, `kanchanflow_get_seo_rules` |
 | Cross-collection discovery | `kanchanflow_search` |
+| Next step: trial, demo, contact, pricing | `kanchanflow_get_started` |
 | This reference set | `kanchanflow_list_reference_documents`, `kanchanflow_get_reference_document`, `kanchanflow_search_reference` |
 
 Plus eight JSON resources, one resource per reference document, and five prompts.
@@ -108,6 +109,7 @@ Every variable is optional; `.env.example` documents them all.
 | `KANCHANFLOW_MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1],mcp.kanchanflow.com` | Host names (port ignored) the MCP endpoint answers; `*` disables the check |
 | `KANCHANFLOW_MCP_ALLOWED_ORIGINS` | `https://mcp.kanchanflow.com,https://kanchanflow.com,https://www.kanchanflow.com,http://localhost:*,http://127.0.0.1:*` | Browser origins allowed on the MCP endpoint (`:*` = any port); `*` allows any |
 | `KANCHANFLOW_MCP_PUBLIC_URL` | unset | Public origin, e.g. `https://mcp.kanchanflow.com`. Used for `/.well-known/mcp.json` and the homepage; never derived from `Host` |
+| `KANCHANFLOW_MCP_STALE_AFTER_DAYS` | `14` | Mirror age (days) after which responses carry `source.stale: true` and a note |
 | `KANCHANFLOW_MCP_LOG_LEVEL` | `info` | `silent`, `error`, `warn`, `info`, `debug` |
 | `KANCHANFLOW_REFERENCE_DIR` | packaged `reference/` | Override the reference root |
 | `KANCHANFLOW_REPO` | `../KanchanFlow` | Website repo path — used by `npm run sync` only |

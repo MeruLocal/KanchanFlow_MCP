@@ -36,8 +36,11 @@ const SKIP_DIRS = new Set(["node_modules", ".git", ".github", "dist", "coverage"
 /** A single document larger than this is skipped rather than served. */
 const MAX_FILE_BYTES = 512 * 1024;
 
-/** Default cap on the body returned by readDocument. */
-export const DEFAULT_MAX_CHARS = 40_000;
+/** Default cap on the body returned by read(). Keeps a response under ~25k characters. */
+export const DEFAULT_MAX_CHARS = 20_000;
+
+/** Largest slice a caller may ask for. */
+export const MAX_SLICE_CHARS = 22_000;
 
 export class ReferenceLoader {
   private readonly root: string;
@@ -117,7 +120,7 @@ export class ReferenceLoader {
    * absolute path, a "..", or anything resolving outside the root is a
    * VALIDATION_ERROR rather than a read.
    */
-  read(relPath: string, maxChars = DEFAULT_MAX_CHARS): ReferenceDocumentContent {
+  read(relPath: string, maxChars = DEFAULT_MAX_CHARS, offset = 0): ReferenceDocumentContent {
     const doc = this.resolve(relPath);
     const abs = path.join(this.root, doc.path);
 
@@ -128,35 +131,58 @@ export class ReferenceLoader {
     }
 
     const limit = Math.max(1, Math.min(maxChars, MAX_FILE_BYTES));
-    const truncated = body.length > limit;
+    const start = Math.max(0, Math.min(Math.trunc(offset), body.length));
+    const end = Math.min(body.length, start + limit);
+    const truncated = end < body.length;
     return {
       ...doc,
-      content: truncated
-        ? `${body.slice(0, limit)}\n\n[truncated at ${limit} characters — request a larger maxChars for the rest]`
-        : body,
+      content: body.slice(start, end),
       truncated,
+      offset: start,
+      ...(truncated
+        ? {
+            nextOffset: end,
+            note: `Truncated at ${limit} characters (characters ${start}–${end} of ${body.length}). Call again with offset ${end} for the rest.`,
+          }
+        : {}),
     };
   }
 
   /** Full-text search across document bodies. Returns matching lines. */
   search(query: string, limit = 20): { path: string; title: string; line: number; text: string }[] {
+    return this.searchPage(query, limit, 0).matches;
+  }
+
+  /**
+   * One page of matching lines, in document-path then line order. `hasMore`
+   * says whether another page exists; `nextOffset` is where it starts.
+   */
+  searchPage(
+    query: string,
+    limit = 20,
+    offset = 0
+  ): { matches: { path: string; title: string; line: number; text: string }[]; offset: number; hasMore: boolean; nextOffset?: number } {
     const needle = query.trim().toLowerCase();
     if (needle.length < 2) {
       throw validationError("Reference search needs a query of at least 2 characters.");
     }
+    const start = Math.max(0, Math.trunc(offset));
+    const want = start + limit + 1; // one extra to know whether more exist
     const hits: { path: string; title: string; line: number; text: string }[] = [];
     for (const doc of this.list()) {
-      if (hits.length >= limit) break;
+      if (hits.length >= want) break;
       const body = this.read(doc.path, MAX_FILE_BYTES).content;
       const lines = body.split("\n");
-      for (let i = 0; i < lines.length && hits.length < limit; i += 1) {
+      for (let i = 0; i < lines.length && hits.length < want; i += 1) {
         const line = lines[i] as string;
         if (line.toLowerCase().includes(needle)) {
           hits.push({ path: doc.path, title: doc.title, line: i + 1, text: line.trim().slice(0, 300) });
         }
       }
     }
-    return hits;
+    const matches = hits.slice(start, start + limit);
+    const hasMore = hits.length > start + limit;
+    return { matches, offset: start, hasMore, ...(hasMore ? { nextOffset: start + limit } : {}) };
   }
 
   /** Drop cached index and bodies. Used by tests and by a future watch mode. */
