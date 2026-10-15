@@ -39,6 +39,15 @@ export const CONTENT_GUARDRAILS: readonly string[] = [
   "FAQs are visible on the page and are never structured data only.",
 ];
 
+/**
+ * Certifications the company has confirmed to us directly, so they are not
+ * presented as "stated on the website" only. Matched against compliance labels
+ * (the wording itself, e.g. "SOC 2 Type II", comes from the website mirror).
+ * Founder confirmation, 15 Oct 2026. The report itself is still obtained from sales.
+ */
+export const COMPANY_CONFIRMED_CERTIFICATION = /^SOC\s*2\b/i;
+export const COMPANY_CONFIRMED_ON = "15 Oct 2026";
+
 /** Restates SPEC-CONTRACT.md §0 guardrail 6. The hreflang set itself comes from the mirror. */
 export const HREFLANG_POLICY =
   "en-US and x-default only. Wave 1 is a single USA-market .com root — never add en-GB, en-CA, en-AU, en-IN, de, ja or nl.";

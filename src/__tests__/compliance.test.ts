@@ -20,10 +20,25 @@ describe("complianceView", () => {
     ]);
     expect(view.verified).toEqual(["SOC 2 Type II", "ISO 27001", "Example Data Centers"]);
     expect(view.evidence).toEqual({ "SOC 2 Type II": "Report available under NDA." });
+    expect(view.confirmedByCompany).toEqual(["SOC 2 Type II"]);
     expect(view.evidencePending).toEqual(["ISO 27001"]);
     expect(view.notVerified).toEqual([{ label: "AS9100", note: "Not held." }]);
     expect(view.basis).toMatch(/states/);
     expect(view.basis).toContain("ISO 27001");
+  });
+
+  it("presents SOC 2 as company-confirmed without an evidence note, other certifications stay stated", () => {
+    const view = complianceView([
+      { label: "SOC 2 Type II", verified: true },
+      { label: "CCPA Compliant", verified: true },
+      { label: "99.9% uptime target", verified: true },
+    ]);
+    expect(view.confirmedByCompany).toEqual(["SOC 2 Type II"]);
+    expect(view.evidencePending).toEqual([]);
+    expect(view.basis).toMatch(/SOC 2 Type II is confirmed by the company \(founder confirmation, 15 Oct 2026\)/);
+    expect(view.basis).toMatch(/ask KanchanFlow sales/);
+    expect(view.basis).toMatch(/Other entries[^.]*what KanchanFlow states/);
+    expect(view.basis).not.toMatch(/No evidence note/);
   });
 
   it("has nothing pending when every certification carries evidence", () => {
@@ -44,8 +59,10 @@ describe("kanchanflow_get_company_profile", () => {
   it("serves the basis, and flags every verified certification without evidence", () => {
     const data = (tool.handler({}) as { data: any }).data;
     const m = loadMirror();
-    const certs = m.brand.compliance.filter((c) => c.verified && /\b(SOC|ISO|AS)\s*\d/i.test(c.label) && !c.evidence);
+    const certs = m.brand.compliance.filter((c) => c.verified && /\b(SOC|ISO|AS)\s*\d/i.test(c.label) && !c.evidence && !/^SOC\s*2\b/i.test(c.label));
     expect(data.compliance.basis).toMatch(/not as independently confirmed/);
+    expect(data.compliance.basis).toMatch(/SOC 2 Type II is confirmed by the company/);
+    expect(data.compliance.confirmedByCompany).toContain("SOC 2 Type II");
     expect(data.compliance.evidencePending).toEqual(certs.map((c) => c.label));
   });
 
