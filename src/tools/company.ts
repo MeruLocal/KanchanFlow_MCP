@@ -32,7 +32,7 @@ export function complianceView(compliance: Brand["compliance"]) {
     basis:
       "Entries under `verified` are what KanchanFlow states on its website. This server has no access to audit reports. " +
       "Present them as the company's stated position, not as independently confirmed; anyone who needs a report should ask KanchanFlow sales. " +
-      "Anything under `notVerified` is not held today, whatever a general source says; quote its `note`." +
+      "Anything under `notVerified` is not claimed by KanchanFlow; do not state it as held, and quote its `note` for the reason." +
       (evidencePending.length > 0
         ? ` No evidence note is published yet for: ${evidencePending.join(", ")}.`
         : ""),
