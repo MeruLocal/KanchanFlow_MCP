@@ -27,6 +27,7 @@ afterAll(async () => {
 function defaults(tool: ToolDefinition): Record<string, unknown> {
   const m = loadMirror();
   const sample: Record<string, unknown> = {
+    topic: "rfq",
     slug:
       tool.name === "kanchanflow_get_feature"
         ? m.features.items[0]?.slug
