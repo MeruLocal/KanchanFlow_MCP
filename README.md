@@ -80,6 +80,16 @@ Full descriptions: [`reference/mcp/tools.md`](reference/mcp/tools.md).
 Resources: [`reference/mcp/resources.md`](reference/mcp/resources.md).
 Prompts: [`reference/mcp/prompts.md`](reference/mcp/prompts.md).
 
+### Client setup
+
+Ready-made configs for Claude Desktop, Cursor and VS Code are in [`examples/`](examples/). The hosted URL `https://mcp.kanchanflow.com/mcp` is the intended public endpoint and works once that host is deployed; until then run the server locally over stdio.
+
+| Discovery file | Served at |
+|---|---|
+| `/.well-known/mcp.json` | endpoint, transport, auth |
+| `/.well-known/mcp/server-card.json` | identity and capabilities before connecting |
+| `/llms.txt`, `/robots.txt` | for crawlers and assistants |
+
 ### What it cannot do
 
 It does not connect to a customer's KanchanFlow workspace, and it cannot create,

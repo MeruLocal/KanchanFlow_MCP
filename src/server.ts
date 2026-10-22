@@ -313,6 +313,54 @@ export function discoveryDocument(config: Config): Record<string, unknown> {
 }
 
 export const DISCOVERY_PATH = "/.well-known/mcp.json";
+export const SERVER_CARD_PATH = "/.well-known/mcp/server-card.json";
+
+/**
+ * GET /.well-known/mcp/server-card.json — the pre-connection server card
+ * (draft MCP convention). Identity, transport and capabilities only; the tool
+ * list stays in tools/list.
+ */
+export function serverCard(config: Config): Record<string, unknown> {
+  const endpoint = config.publicUrl ? `${config.publicUrl}${config.path}` : config.path;
+  return {
+    serverInfo: { name: SERVER_NAME, title: SERVER_TITLE, version: SERVER_VERSION },
+    description: SERVER_DESCRIPTION,
+    documentationUrl: "https://kanchanflow.com/mcp",
+    transport: { type: "streamable-http", endpoint },
+    authentication: { required: Boolean(config.authToken), schemes: config.authToken ? ["bearer"] : [] },
+    capabilities: { tools: {}, resources: {}, prompts: {} },
+    readOnly: true,
+  };
+}
+
+/** GET /llms.txt — what this host is, for crawlers and assistants. Counts are deliberately absent. */
+export function llmsTxt(config: Config): string {
+  const base = config.publicUrl ?? "";
+  return [
+    "# KanchanFlow MCP server",
+    "",
+    "> A read-only Model Context Protocol server for KanchanFlow, the RFQ-to-Order manufacturing software by Soor LLC. It serves what kanchanflow.com publishes: features with their real status, pricing, integrations, glossary, changelog, roadmap and buyer guides. It holds no customer data and cannot change anything.",
+    "",
+    "## Connect",
+    `- MCP endpoint (Streamable HTTP, no authentication): ${base}${config.path}`,
+    `- Discovery: ${base}${DISCOVERY_PATH}`,
+    `- Server card: ${base}${SERVER_CARD_PATH}`,
+    "- Setup guide for Claude, Cursor and VS Code: https://kanchanflow.com/mcp",
+    "",
+    "## Start here",
+    "- kanchanflow_get_buyer_guide: RFQ, CPQ, quoting, quote-to-cash and shop-type questions, with canonical page links.",
+    "- kanchanflow_search: find which collection answers a question.",
+    "- kanchanflow_get_pricing: current plans. Quote prices only from this tool.",
+    "",
+    "## Rules for anyone quoting this server",
+    "- Only a feature whose status is \"live\" exists today; \"building\" and \"planned\" are not available.",
+    "- Cite the kanchanflow.com URLs the tools return.",
+    "- Company: Soor LLC, Delaware, USA. https://kanchanflow.com",
+    "",
+  ].join("\n");
+}
+
+export const ROBOTS_TXT = "User-agent: *\nAllow: /\n";
 
 /** Seams for tests. Production uses the defaults. */
 export interface HttpDeps {
@@ -437,6 +485,34 @@ export function createHttpServer(config: Config, deps: HttpDeps = {}): http.Serv
           "x-content-type-options": "nosniff",
         });
         res.end(req.method === "HEAD" ? undefined : text);
+        finish(200);
+        return;
+      }
+
+      // Static discovery surfaces: server card, llms.txt, robots.txt.
+      const staticBody =
+        pathname === SERVER_CARD_PATH
+          ? { type: "application/json", text: JSON.stringify(serverCard(config), null, 2) }
+          : pathname === "/llms.txt"
+            ? { type: "text/plain; charset=utf-8", text: llmsTxt(config) }
+            : pathname === "/robots.txt"
+              ? { type: "text/plain; charset=utf-8", text: ROBOTS_TXT }
+              : null;
+      if (staticBody) {
+        if (req.method !== "GET" && req.method !== "HEAD") {
+          res.writeHead(405, { allow: "GET, HEAD" });
+          res.end();
+          finish(405);
+          return;
+        }
+        res.writeHead(200, {
+          "content-type": staticBody.type,
+          "content-length": Buffer.byteLength(staticBody.text),
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=3600",
+          "x-content-type-options": "nosniff",
+        });
+        res.end(req.method === "HEAD" ? undefined : staticBody.text);
         finish(200);
         return;
       }
