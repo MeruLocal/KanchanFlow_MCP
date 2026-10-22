@@ -5,13 +5,6 @@
   "license": "MIT",
   "author": "Soor LLC",
   "mcpName": "com.kanchanflow/mcp",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/MeruLocal/KanchanFlow_MCP.git"
-  },
-  "bugs": {
-    "url": "https://github.com/MeruLocal/KanchanFlow_MCP/issues"
-  },
   "homepage": "https://kanchanflow.com/mcp",
   "type": "module",
   "main": "dist/index.js",
