@@ -36,7 +36,7 @@ modules the pages read.
 ## Shared machinery
 
 - `lib/seo.js` — `buildMetadata()` produces every page's canonical URL, the
-  hreflang set and the social card. Wave 1 emits `en-US` and `x-default` only.
+  hreflang set and the social card. The set is generated from `lib/markets.js`: `en`, one `en-XX` per published indexable market, and `x-default`.
 - `lib/schema.js` — JSON-LD builders: Organization, WebSite,
   SoftwareApplication, BreadcrumbList, Article, HowTo, ItemList. There is
   deliberately no `faqSchema` export.

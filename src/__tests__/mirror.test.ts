@@ -154,8 +154,12 @@ describe("site contract", () => {
     }
   });
 
-  it("emits en-US and x-default only", () => {
-    expect(m.site.hreflang.map((h) => h.hreflang).sort()).toEqual(["en-US", "x-default"]);
+  it("emits en, one en-XX per core market, and x-default (contract §0 #6, amended 2026-10-09)", () => {
+    const tags = m.site.hreflang.map((h) => h.hreflang);
+    expect(tags).toContain("x-default");
+    expect(tags).toContain("en");
+    expect(tags.filter((t) => /^en-[A-Z]{2}$/.test(t)).sort()).toEqual(m.markets.countries.map((c) => `en-${c.code}`).sort());
+    expect(tags.every((t) => t === "x-default" || t === "en" || t.startsWith("en-"))).toBe(true);
   });
 
   it("lists real, absolute routes", () => {

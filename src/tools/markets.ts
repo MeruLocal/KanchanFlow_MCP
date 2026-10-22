@@ -32,7 +32,7 @@ const listMarkets: ToolDefinition = {
     "",
     `${joinList(CONTRACTED, "and")} are contracted prices. ${joinList(INDICATIVE, "and")} are indicative conversions at a fixed dated reference rate and are billed in ${BILLED_IN_FOR_INDICATIVE}.`,
     "",
-    "This is a display currency list, not a list of localised sites. KanchanFlow Wave 1 is a single USA-market .com root: there are no country subdirectories, no per-country canonicals and no non-en-US hreflang alternates.",
+    "Each market is a published English-language country page set on the website (for example /gb/pricing) that shows prices in the market's own currency. Only USD and INR are contracted; every other figure is an indicative conversion. A market has no local office, local phone number, local data residency or local certification: all markets are sold by Soor LLC.",
   ].join("\n"),
   inputSchema: {},
   handler: () => {
@@ -43,7 +43,7 @@ const listMarkets: ToolDefinition = {
       countries: m.markets.countries,
       contractCurrencies: m.markets.countries.filter((c) => c.locked).map((c) => c.currency),
       selectorScope:
-        "Display currency only. The selector never changes the canonical URL, the hreflang set, the routes or the page copy.",
+        "The country chosen sets the market and the currency shown with it. It changes the price display and the market wording of the market-scoped pages; it does not change the contract currency, the product or the company.",
       hreflang: m.site.hreflang.map((h) => h.hreflang),
       source: { syncedAt: m.meta.syncedAt },
     });
@@ -132,7 +132,7 @@ const convertPrice: ToolDefinition<{
     const perUserInr = billing === "annual" ? tier.annualInr : tier.monthlyInr;
     const perUser = amountFor(country, perUserUsd, perUserInr);
     const platform =
-      tier.platformFeeUsd > 0 ? amountFor(country, tier.platformFeeUsd, tier.platformFeeInr ?? null) : null;
+      (tier.platformFeeUsd ?? 0) > 0 ? amountFor(country, tier.platformFeeUsd ?? 0, tier.platformFeeInr ?? null) : null;
 
     const seats = users ?? tier.minUsers;
     const subtotalValue = perUser.value * seats + (platform?.value ?? 0);

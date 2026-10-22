@@ -93,7 +93,7 @@ export interface Tier {
   annualInr: number;
   minUsers: number;
   maxUsers: number | null;
-  platformFeeUsd: number;
+  platformFeeUsd?: number;
   platformFeeInr?: number;
   popular?: boolean;
   tagline: string;
