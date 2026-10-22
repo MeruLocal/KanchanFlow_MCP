@@ -102,8 +102,10 @@ KanchanFlow website repo             this repo
 ```
 
 `scripts/sync-content.mjs` imports the website's own content modules, derives the
-route map from its `app/` directory, and copies its build contract and SEO
-documentation into `reference/site/`. The mirror records the website repo's
+route map from its `app/` directory, and copies its build contract and README into
+`reference/site/`. The website's internal SEO planning documents are not
+copied, and the sync aborts if anything it would write names a company other
+than Soor LLC (`scripts/brand-guard.mjs`). The mirror records the website repo's
 commit hash and the sync timestamp, and every tool response carries
 `source.syncedAt` so a client can judge freshness.
 
@@ -132,7 +134,7 @@ at `kanchanflow://reference/<path>`.
 | `mcp/` | Tools, resources, prompts, security posture, worked examples |
 | `data-model/` | The entities the mirror carries and the shape of each collection |
 | `examples/` | Tool-by-tool usage and end-to-end agent workflows |
-| `site/` | **Synced** — verbatim copies of the website's own contract and SEO docs |
+| `site/` | **Synced** — copies of the website's own build contract and README |
 
 Reads are confined to that folder: an absolute path or a `..` segment is a
 `VALIDATION_ERROR`, checked by normalisation, prefix and `realpath`.

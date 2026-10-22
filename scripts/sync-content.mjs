@@ -31,6 +31,8 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { assertBrandClean, redactBrandGuardrail } from "./brand-guard.mjs";
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, "..");
 
@@ -262,41 +264,55 @@ const mirror = {
   },
 };
 
-fs.mkdirSync(path.join(ROOT, "data"), { recursive: true });
-fs.writeFileSync(
-  path.join(ROOT, "data", "site-mirror.json"),
-  `${JSON.stringify(mirror, null, 2)}\n`
-);
-
 /* ------------------------------------------------------------------ */
-/* Mirror the website's own documents into reference/site/             */
+/* Read the website's own documents for reference/site/                */
 /* ------------------------------------------------------------------ */
 
+/*
+ * Only the build contract and the README. The website's docs/seo/* files are
+ * internal planning (keyword volumes, CPCs, page briefs, a risk register) and
+ * are deliberately not copied: everything under reference/ is served to any
+ * MCP client and shipped in the npm package.
+ */
 const SITE_DOCS = [
   ["SPEC-CONTRACT.md", "spec-contract.md", "The website build contract — the locked guardrails every page obeys."],
   ["README.md", "website-readme.md", "The website repository README: route inventory, content architecture, design system."],
-  ["docs/seo/01-strategy.md", "seo/01-strategy.md", "SEO strategy for the KanchanFlow site."],
-  ["docs/seo/02-keywords.md", "seo/02-keywords.md", "Keyword architecture and target terms."],
-  ["docs/seo/03-architecture.md", "seo/03-architecture.md", "Site and URL architecture."],
-  ["docs/seo/04-editorial.md", "seo/04-editorial.md", "Editorial standards and house style."],
-  ["docs/seo/05-technical.md", "seo/05-technical.md", "Technical SEO requirements."],
-  ["docs/seo/06-roadmap.md", "seo/06-roadmap.md", "SEO delivery roadmap."],
-  ["docs/seo/07-page-briefs.md", "seo/07-page-briefs.md", "Per-page content briefs."],
-  ["docs/seo/08-conflicts.md", "seo/08-conflicts.md", "Known content conflicts and their resolutions."],
 ];
 
-const siteRefDir = path.join(ROOT, "reference", "site");
-fs.mkdirSync(path.join(siteRefDir, "seo"), { recursive: true });
-
-let copied = 0;
-const manifest = [];
+const siteDocs = [];
 for (const [from, to, summary] of SITE_DOCS) {
   const src = path.join(REPO, from);
   if (!fs.existsSync(src)) continue;
   const header =
     `<!-- SYNCED COPY. Source of truth: ${from} in the KanchanFlow website repository.\n` +
     `     Regenerate with \`npm run sync\`. Do not edit this copy by hand. -->\n\n`;
-  fs.writeFileSync(path.join(siteRefDir, to), header + fs.readFileSync(src, "utf8"));
+  // Guardrail 3 of the contract lists the names it forbids; restate it
+  // without them. Anything else that names another brand stops the sync.
+  siteDocs.push({ from, to, summary, text: header + redactBrandGuardrail(fs.readFileSync(src, "utf8")) });
+}
+
+/* ------------------------------------------------------------------ */
+/* Brand guard — before anything is written                            */
+/* ------------------------------------------------------------------ */
+
+const mirrorText = `${JSON.stringify(mirror, null, 2)}\n`;
+assertBrandClean("data/site-mirror.json", mirrorText);
+for (const doc of siteDocs) assertBrandClean(`reference/site/${doc.to} (from ${doc.from})`, doc.text);
+
+/* ------------------------------------------------------------------ */
+/* Write the mirror and reference/site/                                */
+/* ------------------------------------------------------------------ */
+
+fs.mkdirSync(path.join(ROOT, "data"), { recursive: true });
+fs.writeFileSync(path.join(ROOT, "data", "site-mirror.json"), mirrorText);
+
+const siteRefDir = path.join(ROOT, "reference", "site");
+fs.mkdirSync(siteRefDir, { recursive: true });
+
+let copied = 0;
+const manifest = [];
+for (const { from, to, summary, text } of siteDocs) {
+  fs.writeFileSync(path.join(siteRefDir, to), text);
   manifest.push({ path: `site/${to}`, source: from, summary });
   copied += 1;
 }
