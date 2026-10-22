@@ -12,7 +12,7 @@ import { SERVER_VERSION } from "../server-info.js";
 import { packageRoot } from "../utils/package-paths.js";
 
 const root = packageRoot();
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")) as { name: string; version: string };
+const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")) as { name: string; version: string; mcpName?: string };
 const serverJsonText = fs.readFileSync(path.join(root, "server.json"), "utf8");
 const serverJson = JSON.parse(serverJsonText) as {
   name: string;
@@ -34,6 +34,10 @@ describe("server.json", () => {
     expect(serverJson.version).toBe(pkg.version);
     expect(serverJson.packages[0]?.version).toBe(pkg.version);
     expect(serverJson.packages[0]?.identifier).toBe(pkg.name);
+  });
+
+  it("carries the npm ownership marker the MCP Registry verifies", () => {
+    expect(pkg.mcpName).toBe(serverJson.name);
   });
 
   it("advertises the hosted endpoint", () => {

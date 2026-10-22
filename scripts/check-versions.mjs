@@ -18,6 +18,9 @@ const pkg = read("package.json");
 const server = read("server.json");
 
 const problems = [];
+if (pkg.mcpName !== server.name) {
+  problems.push(`package.json mcpName ${pkg.mcpName} != server.json name ${server.name} (the registry checks this for npm packages)`);
+}
 if (server.version !== pkg.version) {
   problems.push(`server.json version ${server.version} != package.json ${pkg.version}`);
 }
