@@ -39,7 +39,7 @@ that would tell an unauthenticated caller anything about the deployment.
 
 There is one authorization rule and it is structural: **there is no privileged
 tool.** Every tool is read-only over public content, so there is no operation a
-token would unlock. `tools/list` returns the same 24 tools to every caller.
+token would unlock. `tools/list` returns the same tools to every caller.
 
 If a future version ever adds a tool that reads or writes anything customer-
 specific, that rule changes and this document changes with it. The pattern to
