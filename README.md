@@ -66,6 +66,7 @@ looks like a failure even when the server is healthy.
 |---|---|
 | Company, positioning, compliance | `kanchanflow_get_company_profile` |
 | Next step: trial, demo, contact, pricing | `kanchanflow_get_started` |
+| Buyer topics: RFQ, CPQ, quoting, quote-to-cash, shop types | `kanchanflow_get_buyer_guide` |
 | Feature catalog with truthful status | `kanchanflow_list_features` · `kanchanflow_get_feature` |
 | Pricing, plan gates, add-ons, AI credits | `kanchanflow_get_pricing` · `kanchanflow_compare_tiers` · `kanchanflow_get_addons` · `kanchanflow_get_ai_credits` |
 | Connectors, setup, limitations | `kanchanflow_list_integrations` · `kanchanflow_get_integration` |

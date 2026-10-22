@@ -7,6 +7,7 @@
  * silently shadowed tool.
  */
 
+import { buyerGuideTools } from "./buyer-guide.js";
 import { companyTools } from "./company.js";
 import { contentTools } from "./content.js";
 import { featureTools } from "./features.js";
@@ -34,6 +35,7 @@ export const allTools: ToolDefinition[] = [
   ...searchTools,
   ...referenceTools,
   ...getStartedTools,
+  ...buyerGuideTools,
 ];
 
 export const NAME_PATTERN = /^kanchanflow_[a-z]+(?:_[a-z0-9]+)*$/;
