@@ -103,8 +103,8 @@ const getPricing: ToolDefinition<{ countryCode?: string }> = {
         const monthly = amountFor(country, t.monthlyUsd, t.monthlyInr);
         const annual = amountFor(country, t.annualUsd, t.annualInr);
         const platform =
-          t.platformFeeUsd > 0
-            ? amountFor(country, t.platformFeeUsd, t.platformFeeInr ?? null)
+          (t.platformFeeUsd ?? 0) > 0
+            ? amountFor(country, t.platformFeeUsd ?? 0, t.platformFeeInr ?? null)
             : null;
         return {
           id: t.id,
@@ -119,7 +119,7 @@ const getPricing: ToolDefinition<{ countryCode?: string }> = {
           platformFeePerMonth: platform
             ? { ...platform, display: formatAmount(country, platform.value) }
             : null,
-          listPriceUsd: { monthly: t.monthlyUsd, annual: t.annualUsd, platformFee: t.platformFeeUsd },
+          listPriceUsd: { monthly: t.monthlyUsd, annual: t.annualUsd, platformFee: t.platformFeeUsd ?? 0 },
           highlights: t.highlights,
         };
       }),
@@ -133,7 +133,7 @@ const getPricing: ToolDefinition<{ countryCode?: string }> = {
       urls: {
         pricing: `${m.brand.url}/pricing`,
         tierComparison: `${m.brand.url}/tier-comparison`,
-        ...(siteLink(m, "/signup") ? { signup: siteLink(m, "/signup") as string } : {}),
+        ...(trialLink(m) ? { signup: (trialLink(m) as { url: string }).url } : {}),
       },
       source: { syncedAt: m.meta.syncedAt },
     });

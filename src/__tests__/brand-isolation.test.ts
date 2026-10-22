@@ -92,11 +92,23 @@ describe("tools", () => {
     const docs = referenceLoader().list();
     expect(docs.length).toBeGreaterThan(0);
     for (const doc of docs) {
-      // Every reference document fits in one default-sized read; the
-      // truncation check proves the whole body was scanned.
-      const text = await callText("kanchanflow_get_reference_document", { path: doc.path });
-      expect(text, doc.path).toContain('\\"truncated\\": false');
-      expectClean(`reference ${doc.path}`, text);
+      // A document longer than one slice is read page by page until the tool
+      // reports truncated: false, so the whole body has been scanned.
+      let offset = 0;
+      for (let page = 0; page < 20; page += 1) {
+        const result = await client.callTool({
+          name: "kanchanflow_get_reference_document",
+          arguments: { path: doc.path, offset },
+        });
+        const text = JSON.stringify(result.content);
+        expectClean(`reference ${doc.path} @${offset}`, text);
+        const body = JSON.parse((result.content as { text: string }[])[0]!.text) as {
+          data: { truncated: boolean; nextOffset?: number };
+        };
+        if (!body.data.truncated) break;
+        offset = body.data.nextOffset as number;
+      }
+      expect(offset, `${doc.path} still truncated after 20 pages`).toBeLessThan(2_000_000);
     }
   });
 

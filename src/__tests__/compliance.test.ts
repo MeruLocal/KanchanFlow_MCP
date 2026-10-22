@@ -20,25 +20,26 @@ describe("complianceView", () => {
     ]);
     expect(view.verified).toEqual(["SOC 2 Type II", "ISO 27001", "Example Data Centers"]);
     expect(view.evidence).toEqual({ "SOC 2 Type II": "Report available under NDA." });
-    expect(view.confirmedByCompany).toEqual(["SOC 2 Type II"]);
     expect(view.evidencePending).toEqual(["ISO 27001"]);
     expect(view.notVerified).toEqual([{ label: "AS9100", note: "Not held." }]);
     expect(view.basis).toMatch(/states/);
     expect(view.basis).toContain("ISO 27001");
   });
 
-  it("presents SOC 2 as company-confirmed without an evidence note, other certifications stay stated", () => {
+  it("never presents a certification as confirmed beyond what the website states", () => {
     const view = complianceView([
       { label: "SOC 2 Type II", verified: true },
       { label: "CCPA Compliant", verified: true },
-      { label: "99.9% uptime target", verified: true },
     ]);
-    expect(view.confirmedByCompany).toEqual(["SOC 2 Type II"]);
-    expect(view.evidencePending).toEqual([]);
-    expect(view.basis).toMatch(/SOC 2 Type II is confirmed by the company \(founder confirmation, 15 Oct 2026\)/);
-    expect(view.basis).toMatch(/ask KanchanFlow sales/);
-    expect(view.basis).toMatch(/Other entries[^.]*what KanchanFlow states/);
-    expect(view.basis).not.toMatch(/No evidence note/);
+    expect(view).not.toHaveProperty("confirmedByCompany");
+    expect(view.basis).not.toMatch(/confirmed by the company|founder/i);
+    expect(view.basis).toMatch(/not as independently confirmed/);
+  });
+
+  it("serves a certification the website does not claim as not held", () => {
+    const view = complianceView([{ label: "SOC 2 Type II", verified: false, note: "Not claimed until a report exists." }]);
+    expect(view.verified).toEqual([]);
+    expect(view.notVerified).toEqual([{ label: "SOC 2 Type II", note: "Not claimed until a report exists." }]);
   });
 
   it("has nothing pending when every certification carries evidence", () => {
@@ -61,8 +62,7 @@ describe("kanchanflow_get_company_profile", () => {
     const m = loadMirror();
     const certs = m.brand.compliance.filter((c) => c.verified && /\b(SOC|ISO|AS)\s*\d/i.test(c.label) && !c.evidence && !/^SOC\s*2\b/i.test(c.label));
     expect(data.compliance.basis).toMatch(/not as independently confirmed/);
-    expect(data.compliance.basis).toMatch(/SOC 2 Type II is confirmed by the company/);
-    expect(data.compliance.confirmedByCompany).toContain("SOC 2 Type II");
+    expect(data.compliance.basis).not.toMatch(/confirmed by the company/);
     expect(data.compliance.evidencePending).toEqual(certs.map((c) => c.label));
   });
 

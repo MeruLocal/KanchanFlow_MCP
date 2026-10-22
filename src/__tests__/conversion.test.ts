@@ -58,11 +58,10 @@ describe("kanchanflow_get_pricing", () => {
   it("returns the trial and demo CTAs with UTM tags", async () => {
     const body = textPayload(await client.callTool({ name: "kanchanflow_get_pricing", arguments: {} }));
     const m = loadMirror();
-    expect(body.data.cta.trial.url.startsWith("https://kanchanflow.com/signup?")).toBe(true);
-    expect(body.data.cta.trial.url).toContain(`${UTM}kanchanflow_get_pricing`);
+    expect(body.data.cta.trial.url).toBe(m.brand.trialCta?.href);
     expect(body.data.cta.trial.label).toBe(m.brand.trialCta?.label);
     expect(body.data.cta.demo.url.startsWith("https://kanchanflow.com/demo?")).toBe(true);
-    expect(body.data.urls.signup).toContain("/signup?");
+    expect(body.data.urls.signup).toBe(m.brand.trialCta?.href);
     expect(body.data.urls.pricing).toContain(UTM);
   });
 
@@ -70,7 +69,7 @@ describe("kanchanflow_get_pricing", () => {
     const body = textPayload(await client.callTool({ name: "kanchanflow_get_pricing", arguments: {} }));
     const m = loadMirror();
     for (const [i, t] of m.pricing.tiers.entries()) {
-      expect(body.data.tiers[i].listPriceUsd).toEqual({ monthly: t.monthlyUsd, annual: t.annualUsd, platformFee: t.platformFeeUsd });
+      expect(body.data.tiers[i].listPriceUsd).toEqual({ monthly: t.monthlyUsd, annual: t.annualUsd, platformFee: t.platformFeeUsd ?? 0 });
     }
   });
 });
@@ -91,9 +90,12 @@ describe("kanchanflow_get_started", () => {
     for (const link of links) {
       expect(link?.url).toBeDefined();
       const u = new URL(link.url);
-      expect(u.hostname).toBe("kanchanflow.com");
-      expect(m.site.routes).toContain(u.pathname);
-      expect(link.url).toContain(`${UTM}kanchanflow_get_started`);
+      expect(u.hostname === "kanchanflow.com" || u.hostname.endsWith(".kanchanflow.com")).toBe(true);
+      if (u.hostname === "kanchanflow.com") {
+        // Own-site pages are real routes and carry the UTM tag; the trial starts in the product app.
+        expect(m.site.routes).toContain(u.pathname);
+        expect(link.url).toContain(`${UTM}kanchanflow_get_started`);
+      }
     }
     expect(body.data.trial.terms).toEqual(m.pricing.trial);
     expect(body.data.callToAction).toContain(m.pricing.trial.blurb);

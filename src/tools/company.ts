@@ -4,7 +4,6 @@
 
 import { loadMirror } from "../data/mirror.js";
 import { ok } from "../errors.js";
-import { COMPANY_CONFIRMED_CERTIFICATION, COMPANY_CONFIRMED_ON } from "../data/claims.js";
 import type { Brand } from "../data/types.js";
 import type { ToolDefinition } from "./tool-types.js";
 
@@ -22,22 +21,18 @@ export function complianceView(compliance: Brand["compliance"]) {
   const evidence = Object.fromEntries(
     verified.filter((c) => typeof c.evidence === "string" && c.evidence.trim()).map((c) => [c.label, c.evidence as string])
   );
-  const confirmed = verified.filter((c) => COMPANY_CONFIRMED_CERTIFICATION.test(c.label)).map((c) => c.label);
   const evidencePending = verified
-    .filter((c) => CERTIFICATION.test(c.label) && !confirmed.includes(c.label) && !(typeof c.evidence === "string" && c.evidence.trim()))
+    .filter((c) => CERTIFICATION.test(c.label) && !(typeof c.evidence === "string" && c.evidence.trim()))
     .map((c) => c.label);
   return {
     verified: verified.map((c) => c.label),
-    confirmedByCompany: confirmed,
     notVerified: compliance.filter((c) => !c.verified).map((c) => ({ label: c.label, note: c.note ?? null })),
     evidence,
     evidencePending,
     basis:
-      (confirmed.length > 0
-        ? `${confirmed.join(", ")} ${confirmed.length > 1 ? "are" : "is"} confirmed by the company (founder confirmation, ${COMPANY_CONFIRMED_ON}); anyone who needs the report should ask KanchanFlow sales. `
-        : "") +
-      "Other entries under `verified` are what KanchanFlow states on its website. This server has no access to audit reports. " +
-      "Present those as the company's stated position, not as independently confirmed; anyone who needs a report should ask KanchanFlow sales." +
+      "Entries under `verified` are what KanchanFlow states on its website. This server has no access to audit reports. " +
+      "Present them as the company's stated position, not as independently confirmed; anyone who needs a report should ask KanchanFlow sales. " +
+      "Anything under `notVerified` is not claimed by KanchanFlow; do not state it as held, and quote its `note` for the reason." +
       (evidencePending.length > 0
         ? ` No evidence note is published yet for: ${evidencePending.join(", ")}.`
         : ""),
@@ -52,7 +47,7 @@ const getCompanyProfile: ToolDefinition = {
     "",
     "Use this to answer 'who makes KanchanFlow', 'where is the company registered', 'is it SOC 2 compliant', 'what is KanchanFlow', or before writing anything that states a company fact.",
     "",
-    "Compliance: `compliance.verified` lists what the company states it holds, as published on its website — it is not proof of an audit, and this server cannot see audit reports. Entries in `compliance.confirmedByCompany` (SOC 2 Type II) are confirmed by the company; say so, and suggest asking sales for the report. For every other entry say \"KanchanFlow states…\" and never present it as an independently confirmed audit; quote `compliance.basis`. `compliance.notVerified` entries are NOT held — the `note` says why.",
+    "Compliance: `compliance.verified` lists what the company states it holds, as published on its website — it is not proof of an audit, and this server cannot see audit reports. For every entry say \"KanchanFlow states…\" and never present it as an independently confirmed audit; quote `compliance.basis`. `compliance.notVerified` entries are NOT held — the `note` says why.",
     "",
     "No parameters. Never errors except INTERNAL_ERROR.",
   ].join("\n"),
@@ -79,8 +74,9 @@ const getCompanyProfile: ToolDefinition = {
       market: {
         wave: locales.wave,
         defaultLocale: locales.default,
-        hreflang: locales.hreflang.map((h) => h.hreflang),
-        note: "Wave 1 is a single USA-market .com root. There are no country subdirectories.",
+        hreflang: m.site.hreflang.map((h) => h.hreflang),
+        markets: m.markets.countries.map((c) => c.code),
+        note: "Country pages exist only for the published markets listed here, on the market-scoped commercial pages (see kanchanflow_get_seo_rules). Every market is English-only and sold by Soor LLC; no local office, phone number, data residency or certification is claimed for any market.",
       },
       keywords,
       evidenceNotes: [

@@ -13,6 +13,17 @@ import type { ToolDefinition } from "./tool-types.js";
 
 /** `${brand.url}${path}` when `path` is a real route on the site, else null. */
 export function siteLink(m: SiteMirror, path: string | undefined): string | null {
+  // An absolute URL on the brand's own domain or one of its subdomains (the
+  // product app, where the free trial starts) is a real destination as it stands.
+  if (path && /^https:\/\//i.test(path)) {
+    try {
+      const u = new URL(path);
+      const own = new URL(m.brand.url).hostname.replace(/^www\./, "");
+      return u.hostname === own || u.hostname.endsWith(`.${own}`) ? u.toString() : null;
+    } catch {
+      return null;
+    }
+  }
   if (!path || !path.startsWith("/")) return null;
   const clean = path.split(/[?#]/)[0] as string;
   if (!m.site.routes.includes(clean)) return null;

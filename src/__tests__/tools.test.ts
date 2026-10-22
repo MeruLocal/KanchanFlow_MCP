@@ -44,7 +44,8 @@ describe("kanchanflow_get_company_profile", () => {
     }>("kanchanflow_get_company_profile");
 
     expect(data.entity.legalName).toBe("Soor LLC");
-    expect(data.compliance.verified).toContain("SOC 2 Type II");
+    expect(data.compliance.verified).not.toContain("SOC 2 Type II");
+    expect(data.compliance.notVerified.map((c) => c.label)).toContain("SOC 2 Type II");
     expect(data.compliance.notVerified.map((c) => c.label).join(" ")).toContain("ISO 27001");
     expect(data.evidenceNotes.join(" ")).toMatch(/no published customer/i);
   });
@@ -220,14 +221,14 @@ describe("kanchanflow_convert_price", () => {
     expect(data.monthlyTotal.arithmetic).toContain("12 seats");
   });
 
-  it("adds the Enterprise platform fee", () => {
+  it("adds a platform fee only where the website publishes one", () => {
     const ent = m.pricing.tiers.find((t) => t.id === "enterprise")!;
     const data = call<{ monthlyTotal: { value: number } }>("kanchanflow_convert_price", {
       countryCode: "US",
       tierId: "enterprise",
       users: 10,
     });
-    expect(data.monthlyTotal.value).toBe(ent.monthlyUsd * 10 + ent.platformFeeUsd);
+    expect(data.monthlyTotal.value).toBe(ent.monthlyUsd * 10 + (ent.platformFeeUsd ?? 0));
   });
 
   it("refuses a seat count below the plan minimum", () => {

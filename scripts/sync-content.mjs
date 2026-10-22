@@ -31,7 +31,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { assertBrandClean, redactBrandGuardrail } from "./brand-guard.mjs";
+import { assertBrandClean, findBrandHits, redactBrandGuardrail } from "./brand-guard.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, "..");
@@ -59,6 +59,17 @@ function resolveRepo() {
 
 const REPO = resolveRepo();
 
+/**
+ * Drop any line of a synced document that names another company. The website's
+ * own docs mention the third-party demo scheduler; this server must not repeat it.
+ */
+function dropBrandLines(text) {
+  return String(text)
+    .split("\n")
+    .map((line) => (findBrandHits(line).length > 0 ? "<!-- line omitted: names a company other than Soor LLC -->" : line))
+    .join("\n");
+}
+
 /* ------------------------------------------------------------------ */
 /* Import the website's ESM content modules                            */
 /* ------------------------------------------------------------------ */
@@ -76,7 +87,12 @@ const brandMod = await load("brand");
 const pricingMod = await load("pricing");
 const featuresMod = await load("features");
 const integrationsMod = await load("integrations");
-const countriesMod = await load("countries");
+// content/countries.js was removed from the website on 2026-10-10; the market
+// registry now lives in lib/markets.js (+ lib/fx.js), which import each other
+// relatively, so they are imported in place rather than copied.
+const marketsMod = await import(pathToFileURL(path.join(REPO, "lib", "markets.js")).href);
+const fxMod = await import(pathToFileURL(path.join(REPO, "lib", "fx.js")).href);
+const marketRoutesMod = await import(pathToFileURL(path.join(REPO, "lib", "market-routes.js")).href);
 const blogMod = await load("blog");
 const glossaryMod = await load("glossary");
 const changelogMod = await load("changelog");
@@ -198,9 +214,21 @@ const mirror = {
   },
 
   markets: {
-    ratesAsOf: countriesMod.RATES_AS_OF,
-    defaultCountry: countriesMod.DEFAULT_COUNTRY,
-    countries: countriesMod.countries,
+    ratesAsOf: fxMod.RATES_AS_OF,
+    defaultCountry: "US",
+    // Core markets only: the indexable set. The long-tail markets are noindex
+    // and add no facts an assistant needs. `locked` = the shown price is the
+    // contracted one; `billedIn` = the invoice currency.
+    countries: marketsMod.coreMarkets.map((m) => ({
+      code: m.code,
+      name: m.name,
+      short: m.copy.shortName,
+      currency: m.displayCurrency,
+      symbol: marketsMod.currencySymbol(m),
+      rate: m.converted ? fxMod.fxRate(m.displayCurrency) : 1,
+      locked: !m.converted,
+      billedIn: m.currency,
+    })),
   },
 
   blog: {
@@ -260,7 +288,14 @@ const mirror = {
       descriptionTargetMin: 120,
       descriptionMax: 158,
     },
-    hreflang: locales.hreflang,
+    // SPEC-CONTRACT §0 #6 (amended 2026-10-09): the cluster is generated from
+    // lib/markets.js. brand.locales.hreflang is deprecated and empty, so the
+    // set is read from the generator itself, on a market-scoped page.
+    hreflang: marketRoutesMod.hreflangAlternates("/pricing").map((a) => ({
+      hreflang: a.hreflang,
+      path: new URL(a.href).pathname,
+    })),
+    marketScopedPaths: marketRoutesMod.MARKET_SCOPED_PATHS,
   },
 };
 
@@ -288,14 +323,29 @@ for (const [from, to, summary] of SITE_DOCS) {
     `     Regenerate with \`npm run sync\`. Do not edit this copy by hand. -->\n\n`;
   // Guardrail 3 of the contract lists the names it forbids; restate it
   // without them. Anything else that names another brand stops the sync.
-  siteDocs.push({ from, to, summary, text: header + redactBrandGuardrail(fs.readFileSync(src, "utf8")) });
+  siteDocs.push({ from, to, summary, text: header + dropBrandLines(redactBrandGuardrail(fs.readFileSync(src, "utf8"))) });
 }
 
 /* ------------------------------------------------------------------ */
 /* Brand guard — before anything is written                            */
 /* ------------------------------------------------------------------ */
 
-const mirrorText = `${JSON.stringify(mirror, null, 2)}\n`;
+// The website sends "Book a demo" to a third-party scheduler. That URL belongs
+// to another company and carries a booking token, so the mirror points at the
+// site's own /demo route instead. Only URL values are rewritten; any other
+// string that names another company still aborts the sync below.
+const OWN_DEMO_URL = `${mirror.meta.siteUrl}/demo`;
+function ownUrls(value) {
+  if (typeof value === "string") {
+    return /^https?:\/\//i.test(value) && findBrandHits(value).length > 0 ? OWN_DEMO_URL : value;
+  }
+  if (Array.isArray(value)) return value.map(ownUrls);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, ownUrls(v)]));
+  }
+  return value;
+}
+const mirrorText = `${JSON.stringify(ownUrls(mirror), null, 2)}\n`;
 assertBrandClean("data/site-mirror.json", mirrorText);
 for (const doc of siteDocs) assertBrandClean(`reference/site/${doc.to} (from ${doc.from})`, doc.text);
 
