@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 
+import { CONTENT_GUARDRAILS, FORBIDDEN_SCHEMA_REASON, HREFLANG_POLICY } from "../data/claims.js";
 import { loadMirror } from "../data/mirror.js";
 import { ok } from "../errors.js";
 import { paginate, type ToolDefinition } from "./tool-types.js";
@@ -67,25 +68,14 @@ const getSeoRules: ToolDefinition = {
       metadataBudget: m.site.metadataBudget,
       schemaTypesEmitted: m.site.schemaTypes,
       schemaTypesForbidden: m.site.forbiddenSchemaTypes,
-      forbiddenSchemaReason: {
-        FAQPage: "Retired site-wide. FAQs render visibly through the FAQ accordion and emit no structured data.",
-        Review: "No third-party review data exists yet.",
-        AggregateRating: "No third-party review data exists yet.",
-      },
+      forbiddenSchemaReason: Object.fromEntries(
+        m.site.forbiddenSchemaTypes.map((t) => [t, FORBIDDEN_SCHEMA_REASON[t] ?? "Forbidden by the site's build contract."])
+      ),
       hreflang: {
         set: m.site.hreflang,
-        policy:
-          "en-US and x-default only. Wave 1 is a single USA-market .com root — never add en-GB, en-CA, en-AU, en-IN, de, ja or nl.",
+        policy: HREFLANG_POLICY,
       },
-      contentGuardrails: [
-        "Never fabricate a customer name, logo, testimonial, count or case study. There are none.",
-        "Never claim a certification without an audit. Check the compliance list for the verified flag.",
-        "Feature status must be truthful: live means production today; building carries a visible target; planned promises nothing.",
-        "Never cap RFQ line items or quote revision history in pricing copy.",
-        "Never gate the India GST, e-Invoice IRN or 43B(h) features behind a plan.",
-        "Every page carries a 40-to-60-word quotable answer block within the first 100 words after the H1.",
-        "FAQs are visible on the page and are never structured data only.",
-      ],
+      contentGuardrails: [...CONTENT_GUARDRAILS],
       keywordArchitecture: m.brand.keywords,
       referenceDocument: "site/spec-contract.md",
       source: { syncedAt: m.meta.syncedAt },

@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Type-checks src/ and the tests (tsconfig.test.json).
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      # package.json is the single version source; server.json must match.
+      - run: npm run check:versions
+      # Production dependencies only; high and critical fail the build.
+      - run: npm audit --omit=dev --audit-level=high

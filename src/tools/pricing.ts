@@ -1,18 +1,22 @@
 /**
  * Pricing tools.
  *
- * Prices are quoted from content/pricing.js in the website repo. USD and INR
- * are contracted figures; every other currency this server reports is an
- * indicative conversion at a fixed dated rate, and every response that carries
- * one says so in `basis`.
+ * Prices are quoted from content/pricing.js in the website repo. Which
+ * currencies are contracted comes from each market's `locked` flag in the
+ * mirror; every other currency this server reports is an indicative
+ * conversion at a fixed dated rate, and every response that carries one says
+ * so in `basis`. Fixed sentences live in src/data/claims.ts.
  */
 
 import { z } from "zod";
 
+import { basisFor, contractedCurrencies, joinList, marketCodes, NEVER_GATED, planNames } from "../data/claims.js";
 import { loadMirror } from "../data/mirror.js";
 import { notFound, ok, validationError } from "../errors.js";
 import type { ToolDefinition } from "./tool-types.js";
-import type { Country } from "../data/types.js";
+import type { Country, SiteMirror } from "../data/types.js";
+import { siteLink } from "./get-started.js";
+import { compareTiersOutput, pricingOutput } from "./output-schemas.js";
 
 /* Mirrors content/countries.js roundLocal / amountFor / formatAmount exactly. */
 function roundLocal(n: number): number {
@@ -48,33 +52,36 @@ function resolveCountry(code: string | undefined): Country {
   return country;
 }
 
-function basisFor(country: Country, ratesAsOf: string): string {
-  if (country.code === "US") return "USD is the contract currency.";
-  if (country.code === "IN")
-    return "India pricing is contracted in INR. USD remains the contract currency everywhere else.";
-  return `${country.currency} figures are indicative, converted from the USD list price at a fixed reference rate set ${ratesAsOf}. Contracts and invoices are in USD.`;
-}
+/* Descriptions are generated from the mirror at module load, so the plan and
+ * market lists cannot drift from the data the tool returns. */
+const M = loadMirror();
+const MARKETS = marketCodes(M.markets);
+const MARKET_LIST = `${MARKETS.length} KanchanFlow display markets (${MARKETS.join(", ")})`;
+const MARKET_CHOICES = joinList(MARKETS, "or");
+const PLANS = planNames(M.pricing.tiers);
+const CONTRACTED = joinList(contractedCurrencies(M.markets), "and");
 
 const getPricing: ToolDefinition<{ countryCode?: string }> = {
   name: "kanchanflow_get_pricing",
   title: "Get KanchanFlow pricing",
   description: [
-    "Returns the three KanchanFlow plans with monthly and annual per-user prices, user minimums and caps, any platform fee, the tagline, who each plan is for, its highlights, the annual discount and the free-trial terms.",
+    `Returns the ${PLANS.length} KanchanFlow plans (${PLANS.join(", ")}) with monthly and annual per-user prices, user minimums and caps, any platform fee, the tagline, who each plan is for, its highlights, the annual discount and the free-trial terms.`,
     "",
-    "Use it for 'how much does KanchanFlow cost', 'what plans are there', 'what is included in Professional', and before quoting any price.",
+    "Use it for 'how much does KanchanFlow cost', 'what plans are there', 'what is included in Professional', and before quoting any price. `cta` carries the free-trial and demo links to give a user who wants to try it.",
     "",
-    "Optional `countryCode` converts the display currency to one of the seven KanchanFlow display markets (US, IN, GB, AU, AE, SG, NZ). USD and INR are contracted prices; every other currency is an indicative conversion at a fixed dated rate, and the `basis` field in the response says so — repeat that caveat when you quote a converted figure.",
+    `Optional \`countryCode\` converts the display currency to one of the ${MARKET_LIST}. ${CONTRACTED} are contracted prices; every other currency is an indicative conversion at a fixed dated rate, and the \`basis\` field in the response says so — repeat that caveat when you quote a converted figure.`,
     "",
-    "Three things are never gated on any plan, including the cheapest: RFQ line items, quote revision history, and the India GST / e-Invoice IRN / 43B(h) compliance suite.",
-    "Errors: VALIDATION_ERROR for a country code outside the seven display markets.",
+    `Never gated on any plan, including the cheapest: ${NEVER_GATED.map((s) => s.split(" — ")[0]).join("; ")}.`,
+    `Errors: VALIDATION_ERROR for a country code outside the ${MARKETS.length} display markets.`,
   ].join("\n"),
   inputSchema: {
     countryCode: z
       .string()
       .length(2)
       .optional()
-      .describe("Two-letter display market: US, IN, GB, AU, AE, SG or NZ. Default US."),
+      .describe(`Two-letter display market: ${MARKET_CHOICES}. Default ${M.markets.defaultCountry}.`),
   },
+  outputSchema: pricingOutput,
   handler: ({ countryCode }) => {
     const m = loadMirror();
     const country = resolveCountry(countryCode);
@@ -88,7 +95,7 @@ const getPricing: ToolDefinition<{ countryCode?: string }> = {
         contracted: country.locked,
         billedIn: country.billedIn,
         ratesAsOf: m.markets.ratesAsOf,
-        basis: basisFor(country, m.markets.ratesAsOf),
+        basis: basisFor(country, m.markets),
       },
       annualDiscountPct: m.pricing.annualDiscountPct,
       trial: m.pricing.trial,
@@ -116,18 +123,32 @@ const getPricing: ToolDefinition<{ countryCode?: string }> = {
           highlights: t.highlights,
         };
       }),
-      neverGated: [
-        "RFQ line items — unlimited on every plan.",
-        "Quote revision history — unlimited retention on every plan.",
-        "India GST, e-Invoice IRN and MSMED Section 43B(h) — included on every plan, never an add-on.",
-      ],
+      neverGated: [...NEVER_GATED],
       ceilingPolicy: m.pricing.ceilingPolicy,
       faqs: m.pricing.faqs,
-      urls: { pricing: `${m.brand.url}/pricing`, tierComparison: `${m.brand.url}/tier-comparison` },
+      cta: {
+        ...(trialLink(m) ? { trial: trialLink(m) } : {}),
+        ...(demoLink(m) ? { demo: demoLink(m) } : {}),
+      },
+      urls: {
+        pricing: `${m.brand.url}/pricing`,
+        tierComparison: `${m.brand.url}/tier-comparison`,
+        ...(siteLink(m, "/signup") ? { signup: siteLink(m, "/signup") as string } : {}),
+      },
       source: { syncedAt: m.meta.syncedAt },
     });
   },
 };
+
+function trialLink(m: SiteMirror): { label: string; url: string } | null {
+  const url = siteLink(m, m.brand.trialCta?.href);
+  return url && m.brand.trialCta ? { label: m.brand.trialCta.label, url } : null;
+}
+
+function demoLink(m: SiteMirror): { label: string; url: string } | null {
+  const url = siteLink(m, m.brand.primaryCta?.href);
+  return url && m.brand.primaryCta ? { label: m.brand.primaryCta.label, url } : null;
+}
 
 const compareTiers: ToolDefinition<{ group?: string; capability?: string }> = {
   name: "kanchanflow_compare_tiers",
@@ -144,6 +165,7 @@ const compareTiers: ToolDefinition<{ group?: string; capability?: string }> = {
     group: z.string().optional().describe("One matrix group name, e.g. 'Seats & limits'."),
     capability: z.string().optional().describe("Substring filter on the capability label."),
   },
+  outputSchema: compareTiersOutput,
   handler: ({ group, capability }) => {
     const m = loadMirror();
     const groups = m.pricing.featureMatrix;
@@ -188,10 +210,10 @@ const getAddOns: ToolDefinition<{ countryCode?: string }> = {
     "",
     "Also returns the WhatsApp billing model (included message volume and pass-through markup per plan) and the ceiling policy: an in-app warning at 80% of any ceiling and a hard block at 100%, never a silent overage.",
     "",
-    "Optional `countryCode` converts prices to one of the seven display markets, with the same contracted-versus-indicative caveat as kanchanflow_get_pricing.",
+    `Optional \`countryCode\` converts prices to one of the ${MARKET_LIST}, with the same contracted-versus-indicative caveat as kanchanflow_get_pricing.`,
   ].join("\n"),
   inputSchema: {
-    countryCode: z.string().length(2).optional().describe("Display market. Default US."),
+    countryCode: z.string().length(2).optional().describe(`Display market: ${MARKET_CHOICES}. Default ${M.markets.defaultCountry}.`),
   },
   handler: ({ countryCode }) => {
     const m = loadMirror();
@@ -201,7 +223,7 @@ const getAddOns: ToolDefinition<{ countryCode?: string }> = {
         countryCode: country.code,
         currency: country.currency,
         contracted: country.locked,
-        basis: basisFor(country, m.markets.ratesAsOf),
+        basis: basisFor(country, m.markets),
       },
       addOns: m.pricing.addOns.map((a) => {
         const amt = amountFor(country, a.usd, a.inr);

@@ -4,7 +4,45 @@
 
 import { loadMirror } from "../data/mirror.js";
 import { ok } from "../errors.js";
+import { COMPANY_CONFIRMED_CERTIFICATION, COMPANY_CONFIRMED_ON } from "../data/claims.js";
+import type { Brand } from "../data/types.js";
 import type { ToolDefinition } from "./tool-types.js";
+
+/** Labels that name an audited certification rather than a fact about the company. */
+const CERTIFICATION = /\b(SOC\s*\d|ISO\s*\d|AS\s*\d|CMMC|HIPAA|PCI)/i;
+
+/**
+ * The compliance list as served. `verified` entries are what the company's
+ * website states it holds; this server cannot see an auditor's report. When
+ * the mirror carries an `evidence` note for an entry it is returned, and any
+ * certification-type entry without one is listed under `evidencePending`.
+ */
+export function complianceView(compliance: Brand["compliance"]) {
+  const verified = compliance.filter((c) => c.verified);
+  const evidence = Object.fromEntries(
+    verified.filter((c) => typeof c.evidence === "string" && c.evidence.trim()).map((c) => [c.label, c.evidence as string])
+  );
+  const confirmed = verified.filter((c) => COMPANY_CONFIRMED_CERTIFICATION.test(c.label)).map((c) => c.label);
+  const evidencePending = verified
+    .filter((c) => CERTIFICATION.test(c.label) && !confirmed.includes(c.label) && !(typeof c.evidence === "string" && c.evidence.trim()))
+    .map((c) => c.label);
+  return {
+    verified: verified.map((c) => c.label),
+    confirmedByCompany: confirmed,
+    notVerified: compliance.filter((c) => !c.verified).map((c) => ({ label: c.label, note: c.note ?? null })),
+    evidence,
+    evidencePending,
+    basis:
+      (confirmed.length > 0
+        ? `${confirmed.join(", ")} ${confirmed.length > 1 ? "are" : "is"} confirmed by the company (founder confirmation, ${COMPANY_CONFIRMED_ON}); anyone who needs the report should ask KanchanFlow sales. `
+        : "") +
+      "Other entries under `verified` are what KanchanFlow states on its website. This server has no access to audit reports. " +
+      "Present those as the company's stated position, not as independently confirmed; anyone who needs a report should ask KanchanFlow sales." +
+      (evidencePending.length > 0
+        ? ` No evidence note is published yet for: ${evidencePending.join(", ")}.`
+        : ""),
+  };
+}
 
 const getCompanyProfile: ToolDefinition = {
   name: "kanchanflow_get_company_profile",
@@ -14,7 +52,7 @@ const getCompanyProfile: ToolDefinition = {
     "",
     "Use this to answer 'who makes KanchanFlow', 'where is the company registered', 'is it SOC 2 compliant', 'what is KanchanFlow', or before writing anything that states a company fact.",
     "",
-    "Every compliance entry carries a `verified` flag. `verified: false` means the certification is NOT held — the accompanying `note` says why. Never present an unverified entry as an achieved audit.",
+    "Compliance: `compliance.verified` lists what the company states it holds, as published on its website — it is not proof of an audit, and this server cannot see audit reports. Entries in `compliance.confirmedByCompany` (SOC 2 Type II) are confirmed by the company; say so, and suggest asking sales for the report. For every other entry say \"KanchanFlow states…\" and never present it as an independently confirmed audit; quote `compliance.basis`. `compliance.notVerified` entries are NOT held — the `note` says why.",
     "",
     "No parameters. Never errors except INTERNAL_ERROR.",
   ].join("\n"),
@@ -34,12 +72,7 @@ const getCompanyProfile: ToolDefinition = {
         domain: rest.domain,
       },
       entity,
-      compliance: {
-        verified: compliance.filter((c) => c.verified).map((c) => c.label),
-        notVerified: compliance
-          .filter((c) => !c.verified)
-          .map((c) => ({ label: c.label, note: c.note ?? null })),
-      },
+      compliance: complianceView(compliance),
       trustBadges,
       social,
       sameAs,
