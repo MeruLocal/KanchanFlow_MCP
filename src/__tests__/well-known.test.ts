@@ -100,3 +100,31 @@ describe("homepage", () => {
     expect(html).toContain("dist/index.js");
   });
 });
+
+describe("server card, llms.txt and robots.txt", () => {
+  it("serves a card with the public endpoint, no tool list and read-only stated", async () => {
+    const port = await serve({ KANCHANFLOW_MCP_PUBLIC_URL: "https://mcp.kanchanflow.com" });
+    const res = await request(port, { path: "/.well-known/mcp/server-card.json" });
+    const card = JSON.parse(res.body);
+    expect(res.status).toBe(200);
+    expect(card.transport.endpoint).toBe("https://mcp.kanchanflow.com/mcp");
+    expect(card.authentication.required).toBe(false);
+    expect(card.readOnly).toBe(true);
+    expect(card).not.toHaveProperty("tools");
+  });
+
+  it("serves llms.txt with the endpoint, no counts and no other company", async () => {
+    const port = await serve({ KANCHANFLOW_MCP_PUBLIC_URL: "https://mcp.kanchanflow.com" });
+    const res = await request(port, { path: "/llms.txt" });
+    expect(res.status).toBe(200);
+    expect(res.body).toContain("https://mcp.kanchanflow.com/mcp");
+    expect(res.body).toMatch(/Soor LLC/);
+    expect(res.body).not.toMatch(/\b\d+ tools\b/);
+  });
+
+  it("serves robots.txt and refuses POST on these paths", async () => {
+    const port = await serve({});
+    expect((await request(port, { path: "/robots.txt" })).body).toContain("Allow: /");
+    expect((await request(port, { path: "/llms.txt", method: "POST" })).status).toBe(405);
+  });
+});
