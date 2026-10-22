@@ -4,6 +4,10 @@
   "title": "KanchanFlow",
   "description": "Read-only facts about KanchanFlow, the RFQ-to-Order manufacturing CRM by Soor LLC.",
   "websiteUrl": "https://kanchanflow.com",
+  "repository": {
+    "url": "https://github.com/MeruLocal/KanchanFlow_MCP",
+    "source": "github"
+  },
   "version": "1.0.0",
   "packages": [
     {
